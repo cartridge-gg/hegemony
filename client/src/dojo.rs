@@ -87,10 +87,10 @@ impl Plugin for DojoPlugin {
 
         let game_id = pedersen_hash(&pedersen_hash(&self.account_address, &p2), &p3);
 
-        let tiles = (0u32..=19)
+        let tiles = (0..0_u8)
             .map(|i| EntityModel {
-                model: "Hexagon".into(),
-                keys: vec![game_id, i.into()],
+                model: "Hex".into(),
+                keys: vec![game_id, i.into(), i.into()],
             })
             .collect();
 
