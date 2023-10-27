@@ -76,10 +76,10 @@ impl Plugin for DojoPlugin {
                 account
                     .execute(vec![Call {
                         to: felt!(
-                            "0x69a474a39b11d05c07bb9090fd1961b8e1c87aa5643e7b97087cb0c7620356a"
+                            "0x505e7bb5225bce942606eea5eacc3436400823081cbf0e5d59274408e480258"
                         ),
-                        selector: selector!("init"),
-                        calldata: vec![p2, p3],
+                        selector: selector!("spawn"),
+                        calldata: vec![],
                     }])
                     .send(),
             )

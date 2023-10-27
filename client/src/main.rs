@@ -21,7 +21,7 @@ fn main() {
             DojoPlugin::new(
                 "http://0.0.0.0:5050/".into(),
                 "http://0.0.0.0:8080/".into(),
-                felt!("0x1af130f7b9027f3748c1e3b10ca4a82ac836a30ac4f2f84025e83a99a922a0c"),
+                felt!("0x1ced4b9d69e6fe907fea23bea7e27b287ad3589c62659ccc0d78d435ba906f5"),
                 felt!("0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"),
                 felt!("0x1800000000300000180000000000030000000000003006001800006600"),
             ),

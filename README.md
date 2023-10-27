@@ -1,6 +1,41 @@
 # Hegemony
 
-Rules:
+## Quick start:
+
+Download Dojo
+
+```sh
+curl -L https://install.dojoengine.org | bash
+```
+
+Run Katana:
+
+```sh
+katana
+```
+
+Build + Migrate world:
+
+```sh
+cd contracts
+sozo build
+sozo migrate
+```
+
+Run Torii:
+
+```sh
+torii --world 0x1ced4b9d69e6fe907fea23bea7e27b287ad3589c62659ccc0d78d435ba906f5
+```
+
+Run Client:
+
+```sh
+cd client
+cargo run
+```
+
+## Rules:
 
 Hegemony - digital take on traditional Diplomacy boardgame
 Objective: Use strategy and deception to control territories and be the first to dominate the map.
