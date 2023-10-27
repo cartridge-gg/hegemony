@@ -2,12 +2,39 @@ use array::ArrayTrait;
 use core::debug::PrintTrait;
 use starknet::ContractAddress;
 use dojo::database::schema::{Enum, Member, Ty, Struct, SchemaIntrospection};
+use integer::u128_safe_divmod;
+
+#[derive(Model, Copy, Drop, Serde, Print)]
+struct Game {
+    #[key]
+    id: usize,
+    owner: ContractAddress,
+    seed: usize,
+}
 
 #[derive(Copy, Drop, Serde, Print, Introspect)]
 enum Terrain {
     LAND,
     WATER,
     MOUNTAIN,
+}
+
+impl U128IntoTerrain of Into<u128, Terrain> {
+    fn into(self: u128) -> Terrain {
+        if (self == 0) {
+            return Terrain::LAND;
+        }
+
+        if (self == 1) {
+            return Terrain::WATER;
+        }
+
+        if (self == 2) {
+            return Terrain::MOUNTAIN;
+        }
+
+        return Terrain::LAND;
+    }
 }
 
 #[derive(Copy, Drop, Serde, Print, Introspect)]
@@ -19,20 +46,27 @@ struct Vec2 {
 #[derive(Model, Copy, Drop, Print, Serde)]
 struct Hex {
     #[key]
+    game: u128,
+    #[key]
     x: u8,
     #[key]
     y: u8,
     owner: ContractAddress,
     units: u16,
-    terrain: Terrain,
 }
 
 trait HexTrait {
+    fn terrain(self: @Hex) -> Terrain;
     fn neighbors(self: @Hex) -> Array<Vec2>;
     fn is_valid_neighbor(self: @Hex, neighbor: Vec2) -> bool;
 }
 
 impl HexImpl of HexTrait {
+    fn terrain(self: @Hex) -> Terrain {
+        let (_, idx) = u128_safe_divmod(*self.game, 3_u128.try_into().unwrap());
+        idx.into()
+    }
+
     fn neighbors(self: @Hex) -> Array<Vec2> {
         let mut neighbors = array![
             Vec2 { x: *self.x, y: *self.y - 1 }, // North

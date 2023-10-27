@@ -7,6 +7,7 @@ version = "0.0.1"
 sierra-replace-ids = true
 
 [dependencies]
+cubit = { git = "https://github.com/raphaelDkhn/cubit", rev = "e6331eb" }
 dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.3.2" }
 
 [[target.dojo]]

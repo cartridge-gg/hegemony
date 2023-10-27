@@ -3097,6 +3097,7 @@ dependencies = [
 name = "hegemony"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bevy",
  "bevy-tokio-tasks",
  "bevy_flycam",

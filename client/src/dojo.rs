@@ -1,5 +1,5 @@
-use std::sync::Arc;
-
+use anyhow::Result;
+use bevy::utils::tracing::field::Field;
 use bevy::{app::Plugin, prelude::Resource};
 use dojo_types::schema::EntityModel;
 use parking_lot::Mutex;
@@ -12,6 +12,7 @@ use starknet::{
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
     signers::{LocalWallet, SigningKey},
 };
+use std::sync::Arc;
 
 #[derive(Resource)]
 pub struct DojoResource {
@@ -46,6 +47,38 @@ impl DojoPlugin {
     }
 }
 
+async fn spawn(
+    account: &SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>,
+    game_id: FieldElement,
+) -> Result<()> {
+    let p2 = felt!("0x5686a647a9cdd63ade617e0baf3b364856b813b508f03903eb58a7e622d5855");
+    let p3 = felt!("0x765149d6bc63271df7b0316537888b81aa021523f9516a05306f10fd36914da");
+
+    account
+        .execute(vec![Call {
+            to: felt!("0x505e7bb5225bce942606eea5eacc3436400823081cbf0e5d59274408e480258"),
+            selector: selector!("spawn"),
+            calldata: vec![felt!("0x2"), p2, p3, game_id],
+        }])
+        .send()
+        .await?;
+
+    for x in 0..16_u8 {
+        for y in 0..16_u8 {
+            account
+                .execute(vec![Call {
+                    to: felt!("0x505e7bb5225bce942606eea5eacc3436400823081cbf0e5d59274408e480258"),
+                    selector: selector!("spawn_hex"),
+                    calldata: vec![game_id, x.into(), y.into()],
+                }])
+                .send()
+                .await?;
+        }
+    }
+
+    Ok(())
+}
+
 impl Plugin for DojoPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         let rt = tokio::runtime::Builder::new_multi_thread()
@@ -60,6 +93,8 @@ impl Plugin for DojoPlugin {
 
         let chain_id = rt.block_on(provider.chain_id()).unwrap();
 
+        let game_id = felt!("0x1337");
+
         let account = SingleOwnerAccount::new(
             provider,
             signer,
@@ -68,29 +103,12 @@ impl Plugin for DojoPlugin {
             starknet::accounts::ExecutionEncoding::Legacy,
         );
 
-        let p2 = felt!("0x5686a647a9cdd63ade617e0baf3b364856b813b508f03903eb58a7e622d5855");
-        let p3 = felt!("0x765149d6bc63271df7b0316537888b81aa021523f9516a05306f10fd36914da");
-
-        let _ = rt
-            .block_on(
-                account
-                    .execute(vec![Call {
-                        to: felt!(
-                            "0x505e7bb5225bce942606eea5eacc3436400823081cbf0e5d59274408e480258"
-                        ),
-                        selector: selector!("spawn"),
-                        calldata: vec![felt!("0x2"), p2, p3, felt!("0x1337")],
-                    }])
-                    .send(),
-            )
-            .unwrap();
-
-        let game_id = pedersen_hash(&pedersen_hash(&self.account_address, &p2), &p3);
+        let _ = rt.block_on(spawn(&account, game_id)).unwrap();
 
         let tiles = (0..0_u8)
             .map(|i| EntityModel {
                 model: "Hex".into(),
-                keys: vec![game_id, i.into(), i.into()],
+                keys: vec![i.into(), i.into()],
             })
             .collect();
 
