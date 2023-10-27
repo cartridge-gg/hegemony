@@ -3,7 +3,7 @@ use bevy::utils::tracing::field::Field;
 use bevy::{app::Plugin, prelude::Resource};
 use dojo_types::schema::EntityModel;
 use parking_lot::Mutex;
-use starknet::accounts::Call;
+use starknet::accounts::{Call, ConnectedAccount};
 use starknet::core::crypto::pedersen_hash;
 use starknet::macros::{felt, selector};
 use starknet::{
@@ -54,14 +54,19 @@ async fn spawn(
     let p2 = felt!("0x5686a647a9cdd63ade617e0baf3b364856b813b508f03903eb58a7e622d5855");
     let p3 = felt!("0x765149d6bc63271df7b0316537888b81aa021523f9516a05306f10fd36914da");
 
+    let mut nonce = account.get_nonce().await?;
+
     account
         .execute(vec![Call {
             to: felt!("0x505e7bb5225bce942606eea5eacc3436400823081cbf0e5d59274408e480258"),
             selector: selector!("spawn"),
             calldata: vec![felt!("0x2"), p2, p3, game_id],
         }])
+        .nonce(nonce)
         .send()
         .await?;
+
+    nonce += FieldElement::ONE;
 
     for x in 0..16_u8 {
         for y in 0..16_u8 {
@@ -71,8 +76,11 @@ async fn spawn(
                     selector: selector!("spawn_hex"),
                     calldata: vec![game_id, x.into(), y.into()],
                 }])
+                .nonce(nonce)
                 .send()
                 .await?;
+
+            nonce += FieldElement::ONE;
         }
     }
 
