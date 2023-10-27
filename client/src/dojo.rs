@@ -79,7 +79,7 @@ impl Plugin for DojoPlugin {
                             "0x505e7bb5225bce942606eea5eacc3436400823081cbf0e5d59274408e480258"
                         ),
                         selector: selector!("spawn"),
-                        calldata: vec![],
+                        calldata: vec![felt!("0x2"), p2, p3, felt!("0x1337")],
                     }])
                     .send(),
             )

@@ -4,6 +4,13 @@ use starknet::ContractAddress;
 use dojo::database::schema::{Enum, Member, Ty, Struct, SchemaIntrospection};
 
 #[derive(Copy, Drop, Serde, Print, Introspect)]
+enum Terrain {
+    LAND,
+    WATER,
+    MOUNTAIN,
+}
+
+#[derive(Copy, Drop, Serde, Print, Introspect)]
 struct Vec2 {
     x: u8,
     y: u8
@@ -17,6 +24,7 @@ struct Hex {
     y: u8,
     owner: ContractAddress,
     units: u16,
+    terrain: Terrain,
 }
 
 trait HexTrait {

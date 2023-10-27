@@ -66,7 +66,7 @@ struct Board {
     hexs: HashMap<(u8, u8), Hex>,
 }
 
-const HEX_HEIGHT: f32 = 1.73;
+const HEX_HEIGHT: f32 = 2.73;
 const HEX_WIDTH: f32 = 2.0;
 
 // const BOARD_HEIGHT: usize = 5 * HEX_HEIGHT;
@@ -113,8 +113,8 @@ fn setup(
     let cell_scene = asset_server.load("tile_hexagon.glb#Scene0");
     let z_offset = (3. / 4.) * HEX_WIDTH;
 
-    for i in 0..255_u8 {
-        for j in 0..255_u8 {
+    for i in 0..2_u8 {
+        for j in 0..2_u8 {
             let x = (HEX_HEIGHT * j as f32) - (HEX_HEIGHT / 2. * i as f32);
             let z = z_offset * j as f32;
             let transform = Transform::from_xyz(x, 1., z);
