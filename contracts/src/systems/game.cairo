@@ -1,5 +1,5 @@
 #[dojo::contract]
-mod lobby {
+mod game {
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     use hegemony::models::{
@@ -10,7 +10,7 @@ mod lobby {
     // TODO: Complete Lobby System
     #[generate_trait]
     #[external(v0)]
-    impl LobbyImpl of ILobby {
+    impl GameImpl of IGame {
         fn create_game(self: @ContractState) {
             let world = self.world();
 

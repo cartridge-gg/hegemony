@@ -1,5 +1,6 @@
 mod systems {
     mod spawn;
+    mod move;
     mod game;
 }
 

@@ -9,7 +9,7 @@ mod spawn {
 
     #[generate_trait]
     #[external(v0)]
-    impl ActionsImpl of IActions {
+    impl SpawnImpl of ISpawn {
         fn spawn_squad(self: @ContractState, game_id: u32) {
             let world = self.world();
 
