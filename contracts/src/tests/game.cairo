@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use debug::PrintTrait;
     use starknet::class_hash::Felt252TryIntoClassHash;
+    use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     // import world dispatcher
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -96,8 +96,8 @@ mod tests {
 
         systems.spawn_system.spawn_squad(GAME_ID);
 
-        let x: u32 = 11;
-        let y: u32 = 11;
+        let x: u32 = 12;
+        let y: u32 = 12;
 
         let mut pos = array![x, y];
 
@@ -109,5 +109,10 @@ mod tests {
             .move_squad_commitment(GAME_ID, SQUAD_ID, poseidon_hash_span(serialized.span()));
 
         systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, x, y);
+
+        let position = get!(world, (GAME_ID, get_caller_address(), SQUAD_ID), Position);
+
+        assert(position.x == x, 'x should be equal');
+        assert(position.y == y, 'y should be equal');
     }
 }

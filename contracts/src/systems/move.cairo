@@ -38,6 +38,11 @@ mod move {
         fn move_squad_reveal(self: @ContractState, game_id: u32, squad_id: u32, x: u32, y: u32) {
             let world = self.world();
 
+            let game = get!(world, (game_id, GAME_ID_CONFIG), Game);
+
+            // TODO: complete lobby logic - this is dumb check right now
+            assert(game.status != GameStatus::NotStarted, 'Game has not started yet');
+
             let player = get_caller_address();
 
             let hash = get!(world, (game_id, player, squad_id), SquadCommitmentHash).hash;
@@ -46,7 +51,9 @@ mod move {
 
             assert(commitment.reveal(array![x, y]), 'Does not match');
 
-            let game = get!(world, (game_id, GAME_ID_CONFIG), Game);
+            let squad_position = Position { game_id, player, squad_id, x, y };
+
+            set!(world, (squad_position));
         }
     }
 }
