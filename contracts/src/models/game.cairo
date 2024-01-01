@@ -1,7 +1,7 @@
 const GAME_ID_CONFIG: felt252 = 'game_id_config';
 const GAME_COUNT_CONFIG: felt252 = 'game_count_config';
 
-#[derive(Model, Copy, Drop, Serde, Print)]
+#[derive(Model, Copy, Drop, Serde)]
 struct Game {
     #[key]
     game_id: u32,
@@ -18,7 +18,7 @@ struct GameCount {
     count: u32,
 }
 
-#[derive(Serde, Copy, Drop, Introspect, PartialEq)]
+#[derive(Serde, Copy, Drop, Introspect, PartialEq, Print)]
 enum GameStatus {
     NotStarted: (),
     Lobby: (),

@@ -1,5 +1,11 @@
+#[starknet::interface]
+trait ISpawn<TContractState> {
+    fn spawn_squad(self: @TContractState, game_id: u32);
+}
+
 #[dojo::contract]
 mod spawn {
+    use super::ISpawn;
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     use hegemony::models::{
@@ -7,9 +13,8 @@ mod spawn {
         game::{GameCount, GAME_ID_CONFIG, Game, GameStatus}
     };
 
-    #[generate_trait]
     #[external(v0)]
-    impl SpawnImpl of ISpawn {
+    impl SpawnImpl of ISpawn<ContractState> {
         fn spawn_squad(self: @ContractState, game_id: u32) {
             let world = self.world();
 

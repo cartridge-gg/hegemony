@@ -1,5 +1,12 @@
+#[starknet::interface]
+trait IGameLobby<TContractState> {
+    fn create_game(self: @TContractState);
+}
+
 #[dojo::contract]
-mod game {
+mod game_lobby {
+    use super::IGameLobby;
+
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     use hegemony::models::{
@@ -7,10 +14,9 @@ mod game {
         game::{GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus}
     };
 
-    // TODO: Complete Lobby System
-    #[generate_trait]
+
     #[external(v0)]
-    impl GameImpl of IGame {
+    impl GameImpl of IGameLobby<ContractState> {
         fn create_game(self: @ContractState) {
             let world = self.world();
 
