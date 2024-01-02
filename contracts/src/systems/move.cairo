@@ -21,6 +21,7 @@ mod move {
 
     use poseidon::poseidon_hash_span;
 
+
     #[external(v0)]
     impl MoveImpl of IMove<ContractState> {
         fn move_squad_commitment(self: @ContractState, game_id: u32, squad_id: u32, hash: felt252) {
@@ -58,8 +59,6 @@ mod move {
             );
             current_position_squad_count.count -= 1;
 
-            // get index of squad on current Position
-
             // hash 
             let hash = get!(world, (game_id, player, squad_id), SquadCommitmentHash).hash;
             let commitment = Commitment { hash };
@@ -80,7 +79,7 @@ mod move {
             squad.serialize(ref serialized);
             let squad_entity_id = poseidon_hash_span(serialized.span());
 
-            // squad index on new position
+            // set squad index on new position
             let new_position_squad_index = PositionSquadEntityIdByIndex {
                 game_id, x, y, squad_position_index: new_position_squad_count.count, squad_entity_id
             };
@@ -92,6 +91,8 @@ mod move {
                 PositionSquadIndexByEntityId
             )
                 .squad_position_index;
+
+            // gets current entity index  
             let mut current_position_entity_id = get!(
                 world,
                 (
@@ -103,6 +104,8 @@ mod move {
                 PositionSquadEntityIdByIndex
             );
 
+            // clears the index spots
+            // TODO: find the first open index spot and insert the squad so we don't grow forever in indexs
             current_position_entity_id.squad_entity_id = 0;
 
             set!(

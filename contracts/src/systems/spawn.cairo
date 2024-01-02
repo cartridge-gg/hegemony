@@ -9,7 +9,7 @@ mod spawn {
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     use hegemony::models::{
-        position::Position, squad::{Squad, PlayerSquadCount},
+        position::{Position, PositionSquadCount}, squad::{Squad, PlayerSquadCount},
         game::{GameCount, GAME_ID_CONFIG, Game, GameStatus}
     };
 
@@ -35,10 +35,16 @@ mod spawn {
             };
 
             // TODO: Placement algorithm - we should add new players in a concentric circle around the center so none are too far from others
-            let position = Position {
-                game_id, player: caller, squad_id: squad_count.count, x: 10, y: 10
-            };
-            set!(world, (squad, position, squad_count));
+            let x = 10;
+            let y = 10;
+
+            // set position
+            let position = Position { game_id, player: caller, squad_id: squad_count.count, x, y };
+
+            let mut new_position_squad_count = get!(world, (game_id, x, y), PositionSquadCount);
+            new_position_squad_count.count += 1;
+
+            set!(world, (squad, position, squad_count, new_position_squad_count));
         }
     }
 }
