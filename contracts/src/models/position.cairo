@@ -50,7 +50,7 @@ struct PositionSquadEntityIdByIndex {
     #[key]
     y: u32,
     #[key]
-    squad_position_id: u8,
+    squad_position_index: u8,
     squad_entity_id: felt252,
 }
 

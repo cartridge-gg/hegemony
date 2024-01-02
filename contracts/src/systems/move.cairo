@@ -10,11 +10,13 @@ mod move {
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     use hegemony::models::{
-        position::{Position, SquadCommitmentHash}, squad::{Squad},
-        game::{GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus}
+        position::{Position, SquadCommitmentHash, PositionSquadCount, PositionSquadEntityIdByIndex},
+        squad::{Squad}, game::{GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus}
     };
 
     use origami::security::commitment::{Commitment, CommitmentTrait};
+
+    use poseidon::poseidon_hash_span;
 
     #[external(v0)]
     impl MoveImpl of IMove<ContractState> {
@@ -53,7 +55,23 @@ mod move {
 
             let squad_position = Position { game_id, player, squad_id, x, y };
 
-            set!(world, (squad_position));
+            // increment squad count on hex
+            let mut position_squad_count = get!(world, (game_id, x, y), PositionSquadCount);
+            position_squad_count.count += 1;
+
+            // hash entity_id
+            let player: felt252 = player.into();
+            let mut squad = array![game_id.into(), player, squad_id.into()];
+            let mut serialized = array![];
+            squad.serialize(ref serialized);
+
+            // set squad index on position
+            let squad_entity_id = poseidon_hash_span(serialized.span());
+            let squad_index = PositionSquadEntityIdByIndex {
+                game_id, x, y, squad_position_index: position_squad_count.count, squad_entity_id
+            };
+
+            set!(world, (squad_position, position_squad_count, squad_index));
         }
     }
 }
