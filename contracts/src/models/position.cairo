@@ -54,6 +54,19 @@ struct PositionSquadEntityIdByIndex {
     squad_entity_id: felt252,
 }
 
+#[derive(Model, Copy, Drop, Serde, Print)]
+struct PositionSquadIndexByEntityId {
+    #[key]
+    game_id: u32,
+    #[key]
+    x: u32,
+    #[key]
+    y: u32,
+    #[key]
+    squad_entity_id: felt252,
+    squad_position_index: u8,
+}
+
 
 #[derive(Model, Copy, Drop, Serde, Print)]
 struct SquadCommitmentHash {
