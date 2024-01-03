@@ -14,7 +14,8 @@ mod move {
             Position, SquadCommitmentHash, PositionSquadCount, PositionSquadEntityIdByIndex,
             PositionSquadIndexByEntityId
         },
-        squad::{Squad}, game::{GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus}
+        squad::{Squad},
+        game::{GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus, GameTrait}
     };
 
     use origami::security::commitment::{Commitment, CommitmentTrait};
@@ -27,10 +28,7 @@ mod move {
         fn move_squad_commitment(self: @ContractState, game_id: u32, squad_id: u32, hash: felt252) {
             let world = self.world();
 
-            let game = get!(world, (game_id, GAME_ID_CONFIG), Game);
-
-            // TODO: complete lobby logic - this is dumb check right now
-            assert(game.status != GameStatus::NotStarted, 'Game has not started yet');
+            get!(world, (game_id, GAME_ID_CONFIG), Game).assert_commit_stage();
 
             // check squad is owned by caller
             // TODO: squad checks
@@ -45,10 +43,7 @@ mod move {
             let world = self.world();
             let player = get_caller_address();
 
-            let game = get!(world, (game_id, GAME_ID_CONFIG), Game);
-
-            // TODO: complete lobby logic - this is dumb check right now
-            assert(game.status != GameStatus::NotStarted, 'Game has not started yet');
+            get!(world, (game_id, GAME_ID_CONFIG), Game).assert_reveal_stage();
 
             // current position squad hex count
             let mut squad_current_position = get!(world, (game_id, player, squad_id), Position);
@@ -73,11 +68,9 @@ mod move {
 
             // hash entity_id
             // set squad index on position
-            let player: felt252 = player.into();
-            let mut squad = array![game_id.into(), player, squad_id.into()];
-            let mut serialized = array![];
-            squad.serialize(ref serialized);
-            let squad_entity_id = poseidon_hash_span(serialized.span());
+            let squad_entity_id = poseidon_hash_span(
+                array![game_id.into(), player.into(), squad_id.into()].span()
+            );
 
             // set squad index on new position
             let new_position_squad_index = PositionSquadEntityIdByIndex {
@@ -85,7 +78,7 @@ mod move {
             };
 
             // clears the index of the squad on the current position
-            let mut current_position_squad_index = get!(
+            let current_position_squad_index = get!(
                 world,
                 (game_id, squad_current_position.x, squad_current_position.y, squad_entity_id),
                 PositionSquadIndexByEntityId
@@ -105,17 +98,16 @@ mod move {
             );
 
             // clears the index spots
-            // TODO: find the first open index spot and insert the squad so we don't grow forever in indexs
             current_position_entity_id.squad_entity_id = 0;
 
             set!(
                 world,
                 (
+                    current_position_squad_count,
+                    current_position_entity_id,
                     new_position_squad,
                     new_position_squad_count,
                     new_position_squad_index,
-                    current_position_squad_count,
-                    current_position_entity_id
                 )
             );
         }

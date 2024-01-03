@@ -1,10 +1,20 @@
 # Hegemony
 
-Strategic Hex game.
+Strategic Hex game of world domination.
 
 ### Contract Structure
 
-`squads` - Players units are called squads which contain units
+The game revolves around three stages per turn.
+
+Commit stage = 8hrs
+Reveal stage = 8hrs
+Resolve stage = 8hrs
+
+**Commit stage:** Players have to commit their moves to the board via hashing their squads movements.
+
+**Reveal stage:** Players reveal their hashed moves. If they do not reveal their moves, then the squads unrevealed can be killed by anyone in the resolve stage...
+
+**Resolve stage:** Combat can be resolved by anyone in this stage. Combat follows a basic rule of total domination for now.
 
 ## Quick start:
 
@@ -17,7 +27,7 @@ curl -L https://install.dojoengine.org | bash
 Run Katana:
 
 ```sh
-katana
+katana --disable-fee
 ```
 
 Build + Migrate world:
