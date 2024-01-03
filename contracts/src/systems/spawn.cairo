@@ -34,7 +34,9 @@ mod spawn {
             player_squad_count.count += 1;
 
             // // make a squad
-            let squad = Squad { game_id, player, squad_id: player_squad_count.count, unit_qty: 10 };
+            let squad = Squad {
+                game_id, player, squad_id: player_squad_count.count, unit_qty: 10, owner: player
+            };
 
             // // TODO: Placement algorithm - we should add new players in a concentric circle around the center so none are too far from others
             let x: u32 = 10;

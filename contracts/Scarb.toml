@@ -10,6 +10,7 @@ sierra-replace-ids = true
 dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.4.2" }
 cubit = { git = "https://github.com/akhercha/cubit.git", rev = "d3869a3" }
 origami = { git = "https://github.com/dojoengine/origami.git" }
+alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git" }
 
 [[target.dojo]]
 

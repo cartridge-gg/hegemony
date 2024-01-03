@@ -12,6 +12,7 @@ struct Squad {
     #[key]
     squad_id: u32, // this is the count the player has
     unit_qty: u32, //  quantity of units
+    owner: ContractAddress
 }
 
 // squad count per player, per game, we use this to get the id of the squad
@@ -22,4 +23,13 @@ struct PlayerSquadCount {
     #[key]
     player: ContractAddress,
     count: u32,
+}
+
+#[derive(Model, Copy, Drop, Serde, Print)]
+struct Allied {
+    #[key]
+    game_id: u32,
+    #[key]
+    player: ContractAddress,
+    ally: ContractAddress
 }

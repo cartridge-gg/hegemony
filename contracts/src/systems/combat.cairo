@@ -9,28 +9,42 @@ mod combat {
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     use hegemony::models::{
-        position::Position, squad::{Squad, PlayerSquadCount},
-        game::{GameCount, GAME_ID_CONFIG, Game, GameStatus}
+        position::{Position, PositionSquadCount, PositionSquadEntityIdByIndex},
+        squad::{Squad, PlayerSquadCount},
+        game::{GameCount, GAME_ID_CONFIG, Game, GameStatus, GameTrait}
     };
+
+    use alexandria_data_structures::array_ext::{ArrayTraitExt, SpanTraitExt};
 
     #[external(v0)]
     impl CombatImpl of ICombat<ContractState> {
         fn resolve_combat(self: @ContractState, game_id: u32, x: u32, y: u32) {
             let world = self.world();
 
-            let game = get!(world, (game_id, GAME_ID_CONFIG), Game);
-
-            // TODO: complete lobby logic - this is dumb check right now
-            assert(game.status != GameStatus::NotStarted, 'Game has not started yet');
+            get!(world, (game_id, GAME_ID_CONFIG), Game).assert_resolve_stage();
 
             let caller = get_caller_address();
-        // get squads on hex
 
-        // sum up squads
+            let position_squad_count = get!(world, (game_id, x, y), PositionSquadCount).count;
 
-        // calculate combat
+            let mut squads = array![];
+            let mut count: usize = 1;
 
-        // resolve
+            loop {
+                if (count > position_squad_count.into()) {
+                    break;
+                }
+
+                let squad_id = get!(world, (game_id, x, y, count), PositionSquadEntityIdByIndex);
+
+                if (squad_id.squad_entity_id != 0) {
+                    let squad = get!(world, (squad_id.squad_entity_id), Squad);
+
+                    squads.append(squad);
+                }
+
+                count += 1;
+            }
         }
     }
 }
