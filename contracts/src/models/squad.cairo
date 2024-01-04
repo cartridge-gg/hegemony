@@ -1,4 +1,5 @@
 use starknet::{ContractAddress, contract_address_const, get_caller_address};
+use origami::map::hex::{hex::IHexTile, types::{HexTile, Direction, DirectionIntoFelt252}};
 
 // unit has 3 keys
 // game_id, address, squad_id
@@ -33,3 +34,4 @@ struct Allied {
     player: ContractAddress,
     ally: ContractAddress
 }
+

@@ -1,4 +1,4 @@
-use starknet::{get_block_timestamp};
+use starknet::{get_block_timestamp, ContractAddress};
 
 const GAME_ID_CONFIG: felt252 = 'game_id_config';
 const GAME_COUNT_CONFIG: felt252 = 'game_count_config';
@@ -68,6 +68,17 @@ struct GameCount {
     #[key]
     game_count_config: felt252,
     count: u32,
+}
+
+#[derive(Model, Copy, Drop, Serde, Print)]
+struct GamePlayerId {
+    #[key]
+    game_id: u32,
+    #[key]
+    game_id_config: felt252,
+    #[key]
+    player: ContractAddress,
+    id: u32,
 }
 
 #[derive(Serde, Copy, Drop, Introspect, PartialEq, Print)]
