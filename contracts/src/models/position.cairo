@@ -12,22 +12,6 @@ struct Position {
     y: u32,
 }
 
-
-#[derive(Model, Copy, Drop, Serde, Print)]
-struct LoctionCheck {
-    #[key]
-    game_id: u32,
-    #[key]
-    x: u32,
-    #[key]
-    y: u32,
-    #[key]
-    player: ContractAddress,
-    #[key]
-    squad_id: u32,
-    at_location: bool,
-}
-
 // two models to allow the creation of an array on each hex
 #[derive(Model, Copy, Drop, Serde, Print)]
 struct PositionSquadCount {

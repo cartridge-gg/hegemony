@@ -24,7 +24,7 @@ mod spawn {
 
     use origami::map::hex::{hex::IHexTile, types::{HexTile, Direction, DirectionIntoFelt252}};
 
-    // TODO: make
+    // TODO: make better
     fn get_player_position(player_number: u32) -> (u32, u32) {
         let center_x = CENTER_X;
         let center_y = CENTER_Y;
