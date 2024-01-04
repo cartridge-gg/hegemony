@@ -2,25 +2,70 @@
 version = 1
 
 [[package]]
+name = "alexandria_data_structures"
+version = "0.2.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git#ecc881e2aee668332441bdfa32336e3404cf8eb1"
+dependencies = [
+ "alexandria_encoding",
+]
+
+[[package]]
+name = "alexandria_encoding"
+version = "0.1.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git#ecc881e2aee668332441bdfa32336e3404cf8eb1"
+dependencies = [
+ "alexandria_math",
+ "alexandria_numeric",
+]
+
+[[package]]
+name = "alexandria_math"
+version = "0.2.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git#ecc881e2aee668332441bdfa32336e3404cf8eb1"
+dependencies = [
+ "alexandria_data_structures",
+]
+
+[[package]]
+name = "alexandria_numeric"
+version = "0.1.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git#ecc881e2aee668332441bdfa32336e3404cf8eb1"
+dependencies = [
+ "alexandria_math",
+]
+
+[[package]]
 name = "cubit"
-version = "1.2.0"
-source = "git+https://github.com/raphaelDkhn/cubit?rev=e6331eb#e6331ebf98c5d5f442a0e5edefe0b367c8e270d9"
+version = "1.3.0"
+source = "git+https://github.com/akhercha/cubit.git?rev=d3869a3#d3869a3f0c47e5ed229bbbfe2fce3fc0510cbc8a"
 
 [[package]]
 name = "dojo"
-version = "0.3.2"
-source = "git+https://github.com/dojoengine/dojo?tag=v0.3.2#a0fa1ad96fb98c088be05da6178f43217891c8c6"
+version = "0.4.2"
+source = "git+https://github.com/dojoengine/dojo?tag=v0.4.2#3b8252dc64c2ec2c5df17f2922c5a5abab668cf3"
 dependencies = [
  "dojo_plugin",
 ]
 
 [[package]]
 name = "dojo_plugin"
-version = "0.3.2"
+version = "0.3.11"
+source = "git+https://github.com/dojoengine/dojo?tag=v0.3.11#1e651b5d4d3b79b14a7d8aa29a92062fcb9e6659"
 
 [[package]]
 name = "hegemony"
 version = "0.0.1"
+dependencies = [
+ "alexandria_data_structures",
+ "cubit",
+ "dojo",
+ "origami",
+]
+
+[[package]]
+name = "origami"
+version = "0.0.0"
+source = "git+https://github.com/dojoengine/origami.git#c59ff25839c42ae3efffba1b72ec08e90faa04d2"
 dependencies = [
  "cubit",
  "dojo",
