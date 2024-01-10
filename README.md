@@ -1,8 +1,21 @@
 # Hegemony
 
+> Basic visual of a game - this is not a representation of the final game.
+> ![hegemony](./media/Hegemony.png)
+
 Strategic Hex game of world domination.
 
-### Contract Structure
+### V0.1.0 Features
+
+- Players can spawn on a grid. They are added to the game in a concentric circle 10 hexes from each other
+- Players start with 6 squads of 2 around their home base
+- Players move their squads around to try and capture Outposts
+- Players spawn 4 units every cycle from their home base
+- The hex map is a noise grid
+- If a players home base has been held for more than 2 turns, the player is destroyed - their troops remain until they are destroyed.
+- Combat resolution is based on most units
+
+### Game Loop
 
 The game revolves around three stages per turn.
 
