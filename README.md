@@ -1,5 +1,34 @@
 # Hegemony
 
+> Basic visual of a game - this is not a representation of the final game.
+> ![hegemony](./media/Hegemony.png)
+
+Strategic Hex game of world domination.
+
+### V0.1.0 Features
+
+- Players can spawn on a grid. They are added to the game in a concentric circle 10 hexes from each other
+- Players start with 6 squads of 2 around their home base
+- Players move their squads around to try and capture Outposts
+- Players spawn 4 units every cycle from their home base
+- The hex map is a noise grid
+- If a players home base has been held for more than 2 turns, the player is destroyed - their troops remain until they are destroyed.
+- Combat resolution is based on most units
+
+### Game Loop
+
+The game revolves around three stages per turn.
+
+Commit stage = 8hrs
+Reveal stage = 8hrs
+Resolve stage = 8hrs
+
+**Commit stage:** Players have to commit their moves to the board via hashing their squads movements.
+
+**Reveal stage:** Players reveal their hashed moves. If they do not reveal their moves, then the squads unrevealed can be killed by anyone in the resolve stage...
+
+**Resolve stage:** Combat can be resolved by anyone in this stage. Combat follows a basic rule of total domination for now.
+
 ## Quick start:
 
 Download Dojo
@@ -11,7 +40,7 @@ curl -L https://install.dojoengine.org | bash
 Run Katana:
 
 ```sh
-katana
+katana --disable-fee
 ```
 
 Build + Migrate world:
@@ -37,42 +66,3 @@ Run Client:
 cd client
 cargo run
 ```
-
-## Rules:
-
-Hegemony - digital take on traditional Diplomacy boardgame
-Objective: Use strategy and deception to control territories and be the first to dominate the map.
-Duration: Each move represents 1 Day.
-
-Setup:
-Each player begins with 7 adjacent, randomly placed hexes on the map.
-Players start with 12 military units, with 2 positioned on each border hex.
-Each player has 1 primary unit factory, which serves as the spawn point for units.
-Black dots represent neutral city-state factories. They can be captured. If unclaimed, any player can seize them based on combat resolution rules.
-Red squares signify impassable mountains.
-
-Unit Movement:
-A unit can move a maximum of 2 adjacent tiles on land per day.
-Moving onto the sea costs a unit one move. If already at sea, a unit can move 3 tiles. Launching or landing from the sea requires one move.
-
-Gameplay:
-Players record their moves daily on a private Google sheet, specifying unit movements, and if they are allied for the upcoming day.
-If players are allied, they are allowed to move onto the allies land, without conflict.
-Players can communicate either privately or publicly to strategize. However, these discussions are non-binding.
-Moves are finalized at 12 am. An 'Arbiter' then processes all moves, handles combat resolution, and reveals the results.
-The game concludes when one player controls 10 factories or when the remaining players agree to a truce.
-
-Unit Spawning:
-Every 2 days, players receive 4 new units for each factory they own.
-Units only spawn at the primary factory, not at captured ones.
-To receive new units, players must control the factory at the dawn of the spawn day. Otherwise, no new units are awarded.
-
-Combat Resolution:
-Capturing a Territory:
-If the hex is unoccupied and only one player moves in, they take control.
-If two players attempt to capture the same hex with equal units, it results in a standoff, and neither progresses. If one player has more units, they capture the hex.
-Defending a Territory:
-If both the attacker and defender have equal units on a hex, the attacker's move is nullified.
-If the attacker has more units, the defender retreats, losing the difference in units. If this leads to a negative count, the units are destroyed. On their next move, the defender chooses a free hex to relocate their units. If no such hex exists, all defender units are eliminated.
-
-IF YOU DO NOT SUMBIT A VALID MOVE YOU MISS THAT TILES MOVE.

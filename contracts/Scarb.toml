@@ -1,5 +1,5 @@
 [package]
-cairo-version = "2.2.0"
+cairo-version = "2.4.0"
 name = "hegemony"
 version = "0.0.1"
 
@@ -7,8 +7,10 @@ version = "0.0.1"
 sierra-replace-ids = true
 
 [dependencies]
-cubit = { git = "https://github.com/raphaelDkhn/cubit", rev = "e6331eb" }
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.3.2" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.4.2" }
+cubit = { git = "https://github.com/akhercha/cubit.git", rev = "d3869a3" }
+origami = { git = "https://github.com/dojoengine/origami.git" }
+alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git" }
 
 [[target.dojo]]
 
