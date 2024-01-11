@@ -24,8 +24,6 @@ mod combat {
 
             get!(world, (game_id, GAME_ID_CONFIG), Game).assert_resolve_stage();
 
-            let caller = get_caller_address();
-
             let position_squad_count = get!(world, (game_id, x, y), PositionSquadCount).count;
 
             let mut squads = ArrayTrait::<Squad>::new();

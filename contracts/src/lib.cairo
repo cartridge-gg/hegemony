@@ -19,3 +19,7 @@ mod config {
     const CENTER_X: u32 = 1000;
     const CENTER_Y: u32 = 1000;
 }
+
+mod utils {
+    mod utils;
+}

@@ -32,7 +32,7 @@ mod tests {
             spawn::{spawn, ISpawnDispatcher, ISpawnDispatcherTrait, ISpawn},
             combat::{combat, ICombatDispatcher, ICombatDispatcherTrait},
         },
-        config::{CENTER_X, CENTER_Y}
+        config::{CENTER_X, CENTER_Y}, utils::{utils::hash_move}
     };
 
     use poseidon::poseidon_hash_span;
@@ -238,5 +238,35 @@ mod tests {
         );
 
         assert(current_position_entity_id_old.squad_entity_id == 0, 'should be empty');
+    }
+
+
+    #[test]
+    #[available_gas(1000000000)]
+    fn test_combat() {
+        let (mut world, mut systems) = setup_game_and_spawn();
+
+        // new positions
+        let x: u32 = 12;
+        let y: u32 = 12;
+
+        systems.move_system.move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(x, y));
+
+        starknet::testing::set_contract_address(PLAYER_TWO_ADDRESS());
+        systems.move_system.move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(x, y));
+
+        // shift time by 8hrs so the reveal can happen
+        set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
+
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, x, y);
+
+        starknet::testing::set_contract_address(PLAYER_ONE_ADDRESS());
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, x, y);
+
+        // shift time to resolve
+        set_block_timestamp(60 * 60 * 2 * COMMIT_TIME_HOURS + 1);
+
+        // resolve
+        systems.combat_system.resolve_combat(GAME_ID, x, y);
     }
 }
