@@ -12,6 +12,17 @@ struct Position {
     y: u32,
 }
 
+// TODO: move to pure ECS
+#[derive(Model, Copy, Drop, Serde, Print)]
+struct Base {
+    #[key]
+    game_id: u32,
+    #[key]
+    player: ContractAddress,
+    x: u32,
+    y: u32,
+}
+
 // two models to allow the creation of an array on each hex
 #[derive(Model, Copy, Drop, Serde, Print)]
 struct PositionSquadCount {

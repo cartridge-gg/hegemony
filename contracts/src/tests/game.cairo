@@ -16,6 +16,7 @@ mod tests {
             Position, position, SquadCommitmentHash, squad_commitment_hash,
             PositionSquadEntityIdByIndex, position_squad_entity_id_by_index, PositionSquadCount,
             position_squad_count, PositionSquadIndexByEntityId, position_squad_index_by_entity_id,
+            Base, base
         },
         game::{
             Game, game, GameCount, game_count, COMMIT_TIME_HOURS, REVEAL_TIME_HOURS,
@@ -38,6 +39,7 @@ mod tests {
 
     use origami::map::hex::{hex::IHexTile, types::{HexTile, Direction, DirectionIntoFelt252}};
 
+    #[derive(Copy, Drop, Serde)]
     struct Systems {
         move_system: IMoveDispatcher,
         game_lobby_system: IGameLobbyDispatcher,
@@ -58,6 +60,7 @@ mod tests {
             game_count::TEST_CLASS_HASH,
             position_squad_index_by_entity_id::TEST_CLASS_HASH,
             game_player_id::TEST_CLASS_HASH,
+            base::TEST_CLASS_HASH
         ];
 
         // deploy world with models
@@ -89,14 +92,42 @@ mod tests {
     const GAME_ID: u32 = 1;
     const SQUAD_ID: u32 = 1;
 
+    const PLAYER_TWO_ID: u32 = 2;
+
+
+    fn PLAYER_ONE_ADDRESS() -> ContractAddress {
+        contract_address_const::<10>()
+    }
+
+    fn PLAYER_TWO_ADDRESS() -> ContractAddress {
+        contract_address_const::<20>()
+    }
+
     fn setup_game() -> (IWorldDispatcher, Systems) {
-        let (mut world, mut systems) = setup_world();
+        let (world, systems) = setup_world();
 
         systems.game_lobby_system.create_game();
 
+        (world, systems)
+    }
+
+    fn setup_game_and_spawn() -> (IWorldDispatcher, Systems) {
+        let (world, systems) = setup_game();
+
+        starknet::testing::set_contract_address(PLAYER_ONE_ADDRESS());
         systems.game_lobby_system.join_game(GAME_ID);
 
+        starknet::testing::set_contract_address(PLAYER_TWO_ADDRESS());
+        systems.game_lobby_system.join_game(GAME_ID);
+
+        starknet::testing::set_contract_address(PLAYER_ONE_ADDRESS());
         systems.game_lobby_system.start_game(GAME_ID);
+        systems.spawn_system.spawn_player(GAME_ID);
+
+        starknet::testing::set_contract_address(PLAYER_TWO_ADDRESS());
+        systems.spawn_system.spawn_player(GAME_ID);
+
+        starknet::testing::set_contract_address(PLAYER_ONE_ADDRESS());
 
         (world, systems)
     }
@@ -105,17 +136,65 @@ mod tests {
     #[test]
     #[available_gas(3000000000)]
     fn test_spawn() {
-        let (mut world, mut systems) = setup_game();
+        let (mut world, mut systems) = setup_game_and_spawn();
 
-        systems.spawn_system.spawn_player(GAME_ID);
+        let player_hex = IHexTile::new(CENTER_X, CENTER_Y);
+
+        let home_base = get!(world, (GAME_ID, PLAYER_ONE_ADDRESS()), Base);
+
+        assert(home_base.x == player_hex.col, 'homebase x');
+        assert(home_base.y == player_hex.row, 'homebase y');
+
+        let east = player_hex.neighbor(Direction::East);
+
+        let squad_id = spawn::player_squad_spawn_location_id(Direction::East);
+
+        let mut current_position_entity_id = get!(
+            world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex
+        );
+
+        let squad_entity_id = poseidon_hash_span(
+            array![GAME_ID.into(), PLAYER_ONE_ADDRESS().into(), squad_id.into()].span()
+        );
+
+        assert(current_position_entity_id.squad_entity_id == squad_entity_id, 'not correct entity');
+    }
+
+    #[test]
+    #[available_gas(3000000000)]
+    fn test_spawn_player_2() {
+        let (mut world, mut systems) = setup_game_and_spawn();
+
+        starknet::testing::set_contract_address(PLAYER_TWO_ADDRESS());
+
+        let (x, y) = spawn::get_player_position(2);
+
+        let player_hex = IHexTile::new(x, y);
+
+        let home_base = get!(world, (GAME_ID, PLAYER_TWO_ADDRESS()), Base);
+
+        assert(home_base.x == player_hex.col, 'homebase x');
+        assert(home_base.y == player_hex.row, 'homebase y');
+
+        let east = player_hex.neighbor(Direction::East);
+
+        let squad_id = spawn::player_squad_spawn_location_id(Direction::East);
+
+        let mut current_position_entity_id = get!(
+            world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex
+        );
+
+        let squad_entity_id = poseidon_hash_span(
+            array![GAME_ID.into(), PLAYER_TWO_ADDRESS().into(), squad_id.into()].span()
+        );
+
+        assert(current_position_entity_id.squad_entity_id == squad_entity_id, 'not correct entity');
     }
 
     #[test]
     #[available_gas(1000000000)]
     fn test_movement() {
-        let (mut world, mut systems) = setup_game();
-
-        systems.spawn_system.spawn_player(GAME_ID);
+        let (mut world, mut systems) = setup_game_and_spawn();
 
         let player_hex = IHexTile::new(CENTER_X, CENTER_Y);
 
@@ -128,10 +207,8 @@ mod tests {
         );
 
         let squad_entity_id = poseidon_hash_span(
-            array![GAME_ID.into(), get_caller_address().into(), squad_id.into()].span()
+            array![GAME_ID.into(), PLAYER_ONE_ADDRESS().into(), squad_id.into()].span()
         );
-
-        assert(current_position_entity_id.squad_entity_id == squad_entity_id, 'not correct entity');
 
         // new positions
         let x: u32 = 12;
@@ -151,7 +228,7 @@ mod tests {
         systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, x, y);
 
         // check position has been updated
-        let position = get!(world, (GAME_ID, get_caller_address(), SQUAD_ID), Position);
+        let position = get!(world, (GAME_ID, PLAYER_ONE_ADDRESS(), SQUAD_ID), Position);
         assert(position.x == x, 'x should be equal');
         assert(position.y == y, 'y should be equal');
 

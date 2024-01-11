@@ -41,6 +41,7 @@ mod game_lobby {
         }
 
         fn join_game(self: @ContractState, game_id: u32) {
+            // TODO: Check only joined once
             let world = self.world();
 
             let player = get_caller_address();
@@ -52,6 +53,8 @@ mod game_lobby {
             game.players += 1;
 
             let mut game_player_id = get!(world, (game_id, GAME_ID_CONFIG, player), GamePlayerId);
+
+            assert(game_player_id.id == 0, 'Player already joined game');
 
             game_player_id.id = game.players;
 

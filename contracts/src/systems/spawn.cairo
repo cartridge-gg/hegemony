@@ -13,7 +13,7 @@ mod spawn {
         models::{
             position::{
                 Position, PositionSquadCount, PositionSquadEntityIdByIndex,
-                PositionSquadIndexByEntityId
+                PositionSquadIndexByEntityId, Base
             },
             squad::{Squad, PlayerSquadCount},
             game::{GameCount, GAME_ID_CONFIG, Game, GameStatus, GameTrait, GamePlayerId}
@@ -100,6 +100,7 @@ mod spawn {
         }
     }
 
+    // TODO: Check spawned already
     #[external(v0)]
     impl SpawnImpl of ISpawn<ContractState> {
         fn spawn_player(self: @ContractState, game_id: u32) {
@@ -111,6 +112,9 @@ mod spawn {
 
             // increment squads
             let mut player_squad_count = get!(world, (game_id, player), PlayerSquadCount);
+
+            assert(player_squad_count.count < 6, 'Player has already spawned');
+
             player_squad_count.count += 6;
 
             let player_id = get!(world, (game_id, GAME_ID_CONFIG, player), GamePlayerId).id;
@@ -118,6 +122,10 @@ mod spawn {
             let (x, y) = get_player_position(player_id);
 
             let home_hex = IHexTile::new(x, y);
+
+            // set homebase // units spawn from here
+            let base = Base { game_id, player, x, y };
+            set!(world, (base));
 
             // spawn squad around spawn location
             spawn_squad(world, player, game_id, home_hex, Direction::East);
