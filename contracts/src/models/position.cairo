@@ -46,7 +46,10 @@ struct PositionSquadEntityIdByIndex {
     y: u32,
     #[key]
     squad_position_index: u8,
-    squad_entity_id: felt252,
+    // the entity - tempory fix for now
+    squad__game_id: u32,
+    squad__player_id: ContractAddress,
+    squad__id: u32,
 }
 
 #[derive(Model, Copy, Drop, Serde, Print)]

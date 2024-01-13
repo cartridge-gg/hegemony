@@ -32,14 +32,22 @@ mod combat {
             let mut num_squads: usize = 0;
 
             loop {
-                if (num_squads > position_squad_count.into()) {
+                if (num_squads >= position_squad_count.into()) {
                     break;
                 }
 
-                let squad_id = get!(world, (game_id, x, y, index), PositionSquadEntityIdByIndex);
+                let mut squad_id = get!(
+                    world, (game_id, x, y, index), PositionSquadEntityIdByIndex
+                );
 
-                if (squad_id.squad_entity_id != 0) {
-                    let mut squad = get!(world, (squad_id.squad_entity_id), Squad);
+                println!("squad_id: {}", position_squad_count);
+
+                if (squad_id.squad__id != 0) {
+                    let mut squad = get!(
+                        world,
+                        (squad_id.squad__game_id, squad_id.squad__player_id, squad_id.squad__id),
+                        Squad
+                    );
 
                     squads.append(squad);
 
@@ -57,19 +65,25 @@ mod combat {
                 if (*squads.at(0).unit_qty == *squads.at(1).unit_qty) {
                     squad_one.unit_qty = 0;
                     squad_two.unit_qty = 0;
-                    set!(world, (squad_one, squad_two));
+
+                    let position_count = PositionSquadCount { game_id, x, y, count: 0 };
+                    set!(world, (squad_one, squad_two, position_count));
                 // squad one wins
                 } else if (*squads.at(0).unit_qty >= *squads.at(1).unit_qty) {
                     squad_one.unit_qty -= *squads.at(1).unit_qty;
 
                     squad_two.unit_qty = 0;
-                    set!(world, (squad_one, squad_two));
+
+                    let position_count = PositionSquadCount { game_id, x, y, count: 1 };
+                    set!(world, (squad_one, squad_two, position_count));
                 // squad two wins
                 } else {
                     squad_one.unit_qty = 0;
 
                     squad_two.unit_qty -= *squads.at(0).unit_qty;
-                    set!(world, (squad_one, squad_two));
+
+                    let position_count = PositionSquadCount { game_id, x, y, count: 1 };
+                    set!(world, (squad_one, squad_two, position_count));
                 }
             }
         }

@@ -157,7 +157,16 @@ mod tests {
             array![GAME_ID.into(), PLAYER_ONE_ADDRESS().into(), squad_id.into()].span()
         );
 
-        assert(current_position_entity_id.squad_entity_id == squad_entity_id, 'not correct entity');
+        let squad_entity_id_in_position = poseidon_hash_span(
+            array![
+                current_position_entity_id.squad__game_id.into(),
+                current_position_entity_id.squad__player_id.into(),
+                current_position_entity_id.squad__id.into()
+            ]
+                .span()
+        );
+
+        assert(squad_entity_id_in_position == squad_entity_id, 'not correct entity');
     }
 
     #[test]
@@ -188,7 +197,16 @@ mod tests {
             array![GAME_ID.into(), PLAYER_TWO_ADDRESS().into(), squad_id.into()].span()
         );
 
-        assert(current_position_entity_id.squad_entity_id == squad_entity_id, 'not correct entity');
+        let squad_entity_id_in_position = poseidon_hash_span(
+            array![
+                current_position_entity_id.squad__game_id.into(),
+                current_position_entity_id.squad__player_id.into(),
+                current_position_entity_id.squad__id.into()
+            ]
+                .span()
+        );
+
+        assert(squad_entity_id_in_position == squad_entity_id, 'not correct entity');
     }
 
     #[test]
@@ -237,7 +255,7 @@ mod tests {
             world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex
         );
 
-        assert(current_position_entity_id_old.squad_entity_id == 0, 'should be empty');
+        assert(current_position_entity_id_old.squad__id == 0, 'should be empty');
     }
 
 
@@ -268,5 +286,9 @@ mod tests {
 
         // resolve
         systems.combat_system.resolve_combat(GAME_ID, x, y);
+
+        let resolved_position_null = get!(world, (GAME_ID, x, y), PositionSquadCount);
+
+        assert(resolved_position_null.count == 0, 'should be empty');
     }
 }

@@ -74,7 +74,13 @@ mod move {
 
             // set squad index on new position
             let new_position_squad_index = PositionSquadEntityIdByIndex {
-                game_id, x, y, squad_position_index: new_position_squad_count.count, squad_entity_id
+                game_id,
+                x,
+                y,
+                squad_position_index: new_position_squad_count.count,
+                squad__game_id: game_id,
+                squad__player_id: player,
+                squad__id: squad_id
             };
 
             // clears the index of the squad on the current position
@@ -98,7 +104,9 @@ mod move {
             );
 
             // clears the index spots
-            current_position_entity_id.squad_entity_id = 0;
+            current_position_entity_id.squad__game_id = 0;
+            current_position_entity_id.squad__player_id = 0.try_into().unwrap();
+            current_position_entity_id.squad__id = 0;
 
             set!(
                 world,
