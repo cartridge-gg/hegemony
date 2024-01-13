@@ -291,4 +291,19 @@ mod tests {
 
         assert(resolved_position_null.count == 0, 'should be empty');
     }
+
+    #[test]
+    #[available_gas(1000000000)]
+    fn test_new_unit_spawn() {
+        let (mut world, mut systems) = setup_game_and_spawn();
+
+        // shift time by 8hrs so the reveal can happen
+        set_block_timestamp(60 * 60 * 64 + 1);
+
+        systems.spawn_system.spawn_new_units(GAME_ID);
+
+        let new_position_squads = get!(world, (GAME_ID, CENTER_X, CENTER_Y), PositionSquadCount);
+
+        assert(new_position_squads.count == 1, 'should be empty');
+    }
 }

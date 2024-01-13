@@ -1,6 +1,7 @@
 #[starknet::interface]
 trait ISpawn<TContractState> {
     fn spawn_player(self: @TContractState, game_id: u32);
+    fn spawn_new_units(self: @TContractState, game_id: u32);
 }
 
 #[dojo::contract]
@@ -43,16 +44,8 @@ mod spawn {
     }
 
     fn spawn_squad(
-        world: IWorldDispatcher,
-        player: ContractAddress,
-        game_id: u32,
-        home_hex: HexTile,
-        direction: Direction,
+        world: IWorldDispatcher, player: ContractAddress, game_id: u32, hex: HexTile, squad_id: u32,
     ) {
-        let squad_id = player_squad_spawn_location_id(direction);
-
-        let hex = home_hex.neighbor(direction);
-
         let x = hex.col;
         let y = hex.row;
 
@@ -90,7 +83,8 @@ mod spawn {
                 position,
                 new_position_squad_count,
                 new_position_squad_by_index,
-                new_position_squad_index_by_id
+                new_position_squad_index_by_id,
+                squad
             )
         );
     }
@@ -134,12 +128,74 @@ mod spawn {
             set!(world, (base));
 
             // spawn squad around spawn location
-            spawn_squad(world, player, game_id, home_hex, Direction::East);
-            spawn_squad(world, player, game_id, home_hex, Direction::NorthEast);
-            spawn_squad(world, player, game_id, home_hex, Direction::NorthWest);
-            spawn_squad(world, player, game_id, home_hex, Direction::West);
-            spawn_squad(world, player, game_id, home_hex, Direction::SouthWest);
-            spawn_squad(world, player, game_id, home_hex, Direction::SouthEast);
+            spawn_squad(
+                world,
+                player,
+                game_id,
+                home_hex.neighbor(Direction::East),
+                player_squad_spawn_location_id(Direction::East)
+            );
+            spawn_squad(
+                world,
+                player,
+                game_id,
+                home_hex.neighbor(Direction::NorthEast),
+                player_squad_spawn_location_id(Direction::NorthEast)
+            );
+            spawn_squad(
+                world,
+                player,
+                game_id,
+                home_hex.neighbor(Direction::NorthWest),
+                player_squad_spawn_location_id(Direction::NorthWest)
+            );
+            spawn_squad(
+                world,
+                player,
+                game_id,
+                home_hex.neighbor(Direction::West),
+                player_squad_spawn_location_id(Direction::West)
+            );
+            spawn_squad(
+                world,
+                player,
+                game_id,
+                home_hex.neighbor(Direction::SouthWest),
+                player_squad_spawn_location_id(Direction::SouthWest)
+            );
+            spawn_squad(
+                world,
+                player,
+                game_id,
+                home_hex.neighbor(Direction::SouthEast),
+                player_squad_spawn_location_id(Direction::SouthEast)
+            );
+
+            set!(world, (player_squad_count));
+        }
+
+        // spawn new units every 3 cycles
+        fn spawn_new_units(self: @ContractState, game_id: u32) {
+            let world = self.world();
+            let game = get!(world, (game_id, GAME_ID_CONFIG), Game);
+
+            // check in spawn cycle
+            game.assert_is_spawn_cycle();
+
+            // check in resolve stage
+            game.assert_resolve_stage();
+
+            let player = get_caller_address();
+
+            // // increment squads
+            let mut player_squad_count = get!(world, (game_id, player), PlayerSquadCount);
+            player_squad_count.count += 1;
+
+            let (x, y) = get_player_position(
+                get!(world, (game_id, GAME_ID_CONFIG, player), GamePlayerId).id
+            );
+
+            spawn_squad(world, player, game_id, IHexTile::new(x, y), player_squad_count.count);
 
             set!(world, (player_squad_count));
         }

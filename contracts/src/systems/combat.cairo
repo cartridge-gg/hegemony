@@ -40,8 +40,6 @@ mod combat {
                     world, (game_id, x, y, index), PositionSquadEntityIdByIndex
                 );
 
-                println!("squad_id: {}", position_squad_count);
-
                 if (squad_id.squad__id != 0) {
                     let mut squad = get!(
                         world,

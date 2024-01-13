@@ -7,6 +7,8 @@ const COMMIT_TIME_HOURS: u64 = 8;
 const REVEAL_TIME_HOURS: u64 = 8;
 const RESOLVE_TIME_HOURS: u64 = 8;
 
+const SPAWN_CYCLE: u64 = 2;
+
 #[derive(Model, Copy, Drop, Serde)]
 struct Game {
     #[key]
@@ -32,6 +34,13 @@ impl GameImpl of GameTrait {
         } else {
             TurnStage::Resolve
         }
+    }
+    // returns the number of the current cycle
+    fn get_cycle_number(self: Game) -> u64 {
+        ((get_block_timestamp() - self.start_time) / (60 * 60) / 24)
+    }
+    fn assert_is_spawn_cycle(self: Game) {
+        assert(self.get_cycle_number() % SPAWN_CYCLE == 0, 'Not in spawn cycle');
     }
     fn assert_commit_stage(self: Game) {
         self.assert_in_progress();
