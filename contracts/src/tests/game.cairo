@@ -304,6 +304,6 @@ mod tests {
 
         let new_position_squads = get!(world, (GAME_ID, CENTER_X, CENTER_Y), PositionSquadCount);
 
-        assert(new_position_squads.count == 1, 'should be empty');
+        assert(new_position_squads.count == 1, 'should have 1 squad');
     }
 }
