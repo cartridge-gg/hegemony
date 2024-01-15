@@ -4,7 +4,8 @@ export interface Move {
   y: number;
   hash: string;
   timestamp: number;
-  commited: boolean;
+  committed: boolean;
+  revealed: boolean;
 }
 
 // local storage

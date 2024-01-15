@@ -80,17 +80,23 @@ body {
 }
 
 @keyframes pulse {
-  0% {
+  0%, 100% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.2); /* Adjust the scale value to control the intensity of the pulse */
-  }
-  100% {
-    transform: scale(1);
+    transform: scale(1.1); /* Adjust this value to control the extent of the pulse */
   }
 }
 
 .pulsing-text {
   animation: pulse 2s infinite; /* Adjust time for speed of pulse */
+}
+
+.pulse-animation {
+  transform-origin: center;
+  animation: pulse 2s infinite;
+}
+
+button {
+  @apply uppercase;
 }
