@@ -9,6 +9,8 @@ import { Grid } from "./ui/components/Hex";
 import { Button } from "./components/ui/button";
 import { Commitment } from "./ui/components/Commitment";
 import { GameClock } from "./ui/components/GameClock";
+import { Canvas } from "@react-three/fiber";
+import { ThreeGrid } from "./ui/components/Three";
 
 function App() {
   const {
@@ -32,44 +34,47 @@ function App() {
   console.log(account.account);
 
   return (
-    <div>
-      <div className="p-4">
-        <Button
-          onClick={() => game_lobby.create_game({ account: account.account })}
-          className="border px-2 "
-        >
-          create game
-        </Button>
-        <Button
-          onClick={() =>
-            game_lobby.join_game({ account: account.account, game_id: 1 })
-          }
-          className="border px-2 "
-        >
-          join game
-        </Button>
+    <div
+      id="canvas-container"
+      className="left-0 absolute top-0 w-screen h-screen"
+    >
+      <Button
+        onClick={() => game_lobby.create_game({ account: account.account })}
+        className="border px-2 "
+      >
+        create game
+      </Button>
+      <Button
+        onClick={() =>
+          game_lobby.join_game({ account: account.account, game_id: 1 })
+        }
+        className="border px-2 "
+      >
+        join game
+      </Button>
 
-        <Button
-          onClick={() =>
-            game_lobby.start_game({ account: account.account, game_id: 1 })
-          }
-          className="border px-2 "
-        >
-          start game
-        </Button>
+      <Button
+        onClick={() =>
+          game_lobby.start_game({ account: account.account, game_id: 1 })
+        }
+        className="border px-2 "
+      >
+        start game
+      </Button>
 
-        <Button
-          onClick={() =>
-            spawn.spawn_player({ account: account.account, game_id: 1 })
-          }
-          className="border px-2 "
-        >
-          spawn player
-        </Button>
-        <Commitment />
-        <GameClock />
-        <Grid rows={30} cols={30} hexSize={50} />
-      </div>
+      <Button
+        onClick={() =>
+          spawn.spawn_player({ account: account.account, game_id: 1 })
+        }
+        className="border px-2 "
+      >
+        spawn player
+      </Button>
+      <Commitment />
+      <GameClock />
+      {/* <Grid rows={30} cols={30} hexSize={50} /> */}
+      {/* <div className="left-0 absolute top-0 w-screen"> */}
+      <ThreeGrid />
     </div>
   );
 }

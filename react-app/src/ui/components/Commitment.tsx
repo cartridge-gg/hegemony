@@ -91,7 +91,12 @@ export const Commitment = () => {
             placeholder="Y Coordinate"
           />
         </div>
-        <Button onClick={() => setMoveByDay(1, move)}>Save Move</Button>
+        <Button
+          disabled={move.x == 0 && move.y == 0}
+          onClick={() => setMoveByDay(1, move)}
+        >
+          Save Move
+        </Button>
       </div>
       <CommitmentMoves />
       <Button
