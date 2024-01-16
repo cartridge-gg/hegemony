@@ -96,10 +96,6 @@ const Hexagon = ({ position, radius, col, row }) => {
     }
   }, [selectedHex, moves]);
 
-  const handleRightClick = (event: any, x: any, y: any) => {
-    setMoveToHex({ x, y });
-  };
-
   useEffect(() => {
     if (isMoveToHex) {
       setBackgroundColor("lightgreen");
