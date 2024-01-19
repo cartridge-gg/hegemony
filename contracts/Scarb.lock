@@ -4,7 +4,7 @@ version = 1
 [[package]]
 name = "alexandria_data_structures"
 version = "0.2.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git#ecc881e2aee668332441bdfa32336e3404cf8eb1"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
 dependencies = [
  "alexandria_encoding",
 ]
@@ -12,7 +12,7 @@ dependencies = [
 [[package]]
 name = "alexandria_encoding"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git#ecc881e2aee668332441bdfa32336e3404cf8eb1"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
 dependencies = [
  "alexandria_math",
  "alexandria_numeric",
@@ -21,7 +21,7 @@ dependencies = [
 [[package]]
 name = "alexandria_math"
 version = "0.2.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git#ecc881e2aee668332441bdfa32336e3404cf8eb1"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
 dependencies = [
  "alexandria_data_structures",
 ]
@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "alexandria_numeric"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git#ecc881e2aee668332441bdfa32336e3404cf8eb1"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
 dependencies = [
  "alexandria_math",
 ]
@@ -41,8 +41,8 @@ source = "git+https://github.com/akhercha/cubit.git?rev=d3869a3#d3869a3f0c47e5ed
 
 [[package]]
 name = "dojo"
-version = "0.4.2"
-source = "git+https://github.com/dojoengine/dojo?tag=v0.4.2#3b8252dc64c2ec2c5df17f2922c5a5abab668cf3"
+version = "0.5.0"
+source = "git+https://github.com/dojoengine/dojo?tag=v0.5.0#41a48b8082456e29d35913c0b81d71382c020b35"
 dependencies = [
  "dojo_plugin",
 ]
@@ -64,8 +64,8 @@ dependencies = [
 
 [[package]]
 name = "origami"
-version = "0.0.0"
-source = "git+https://github.com/dojoengine/origami.git#c59ff25839c42ae3efffba1b72ec08e90faa04d2"
+version = "0.5.0"
+source = "git+https://github.com/dojoengine/origami.git#daa1646ea2155a2af86084899f60f356d69fa2f4"
 dependencies = [
  "cubit",
  "dojo",

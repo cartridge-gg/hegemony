@@ -1,16 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Move } from "@/utils/commitments/storage";
 import { Entity, Has, HasValue } from "@dojoengine/recs";
-import { useEffect, useState } from "react";
-import { poseidonHashMany } from "micro-starknet";
+import { useEffect } from "react";
+import { ec } from "starknet";
 import { useDojo } from "@/dojo/useDojo";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { offset } from "./Hex";
-import { useMoveStore } from "@/store";
+import { Move, useMoveStore } from "@/store";
 import { useStateStore } from "@/hooks/useStateStore";
 import { useCommitTransaction } from "@/hooks/useCommitTransaction";
+import { offset } from "@/utils";
+import { useGameState } from "@/hooks/useGameState";
+import { useQueryParams } from "@/hooks/useQueryParams";
 
 export const Commitment = () => {
   const {
@@ -20,6 +21,9 @@ export const Commitment = () => {
     },
     account: { account },
   } = useDojo();
+
+  const { totalCycles, currentStage, isCommitStage, isResolveStage } =
+    useGameState();
 
   const { move, setMove, setMoveByDay, moves, moveToHex } = useStateStore();
 
@@ -32,21 +36,28 @@ export const Commitment = () => {
 
   useEffect(() => {
     if (move.x && move.y) {
-      const hash = getCommitmentHash([BigInt(move.x), BigInt(move.y)]);
+      const hash = getCommitmentHash([
+        BigInt(move.qty),
+        BigInt(move.x + offset),
+        BigInt(move.y + offset),
+      ]);
+
+      console.log(BigInt(hash));
+      console.log(hash.toString());
       setMove({ ...move, hash: hash.toString() });
     }
   }, [move.x, move.y]);
 
   const isSelected = useMoveStore((state) => state.selectedHex) || {
-    x: 0,
-    y: 0,
+    col: 0,
+    row: 0,
   };
 
   const squadsOnHex = useEntityQuery([
     Has(Position),
     HasValue(Position, {
-      x: isSelected?.x + offset,
-      y: isSelected?.y + offset,
+      x: isSelected?.col + offset,
+      y: isSelected?.row + offset,
     }),
   ]);
 
@@ -62,15 +73,33 @@ export const Commitment = () => {
 
   useEffect(() => {
     if (moveToHex) {
-      setMove({ ...move, x: moveToHex.x, y: moveToHex.y });
+      setMove({
+        ...move,
+        x: moveToHex.col,
+        y: moveToHex.row,
+        qty: moveToHex.qty,
+      });
     }
   }, [moveToHex, moves]);
 
   return (
     <div className="fixed bottom-0 right-0 p-6 w-96 h-96 bg-white z-10 border border-black overflow-auto">
-      🪖 Squad: {squadOnHex?.squad_id} | Current: ({isSelected?.x}/
-      {isSelected?.y})
-      <div className="flex space-x-3 border p-1 px-2">
+      <div className="text-xs border p-1 flex justify-between bg-black text-white uppercase">
+        {squadOnHex?.squad_id ? (
+          <>
+            {" "}
+            <span>🪖 Squad: {squadOnHex?.squad_id}</span>
+            <span>
+              Current: ({isSelected?.col}/{isSelected?.row})
+            </span>
+            <span>Qty: {squadOnHex?.unit_qty}</span>
+          </>
+        ) : (
+          "no squad selected"
+        )}
+      </div>
+
+      <div className="flex space-x-3 border p-1 px-2 text-xs">
         <div className="flex">
           <div className="self-center mr-2">x:</div>
           <Input
@@ -91,40 +120,52 @@ export const Commitment = () => {
             placeholder="Y Coordinate"
           />
         </div>
+        <div className="flex">
+          <div className="self-center mr-2">qty:</div>
+          <Input
+            type="text"
+            name="qty"
+            value={move?.qty}
+            onChange={handleInputChange}
+            placeholder="Y Coordinate"
+          />
+        </div>
         <Button
-          disabled={move.x == 0 && move.y == 0}
-          onClick={() => setMoveByDay(1, move)}
+          disabled={
+            (move.x == 0 && move.y == 0) || squadOnHex?.squad_id == undefined
+          }
+          onClick={() => setMoveByDay(totalCycles, move)}
         >
-          Save Move
+          Save
         </Button>
       </div>
       <CommitmentMoves />
-      <Button
-        onClick={() =>
-          client.move.move_squad_multi({
-            account: account,
-            call_data: movesCommitArray(),
-          })
-        }
-        className="w-full"
-      >
-        commit all
-      </Button>
+      {(isCommitStage || isResolveStage) && (
+        <Button
+          onClick={() =>
+            client.move.move_squad_multi({
+              account: account,
+              call_data: isCommitStage ? movesCommitArray() : moveRevealArray(),
+            })
+          }
+          className="w-full"
+        >
+          {isCommitStage ? "Commit all" : "Reveal all"} moves
+        </Button>
+      )}
     </div>
   );
 };
 
 export const CommitmentMoves = () => {
-  const moves = useMoveStore((state) => state.moves);
+  const loadMovesByDay = useMoveStore((state) => state.loadMovesByDay);
 
-  const movesArray = Object.values(moves).flatMap((dayMoves) =>
-    Object.values(dayMoves)
-  );
+  const { totalCycles, isCommitStage } = useGameState();
 
   return (
     <div className="my-2">
       <h5>Ready</h5>
-      {movesArray.map((move, index) => (
+      {loadMovesByDay(totalCycles).map((move, index) => (
         <CommitmentMove key={index} move={move} />
       ))}
     </div>
@@ -140,25 +181,30 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
     account,
   } = useDojo();
 
-  const { clearByDaySquadId, setMoveByDay } = useStateStore();
+  const { clearByDayUUID, setMoveByDay } = useStateStore();
 
-  const entityId = getEntityIdFromKeys([
-    BigInt(1),
-    BigInt(account.account.address),
-    BigInt(move.squadId),
-  ]) as Entity;
+  const { gameId } = useQueryParams();
+  const { totalCycles } = useGameState();
 
-  const squad = useComponentValue(Position, entityId);
+  const squad = useComponentValue(
+    Position,
+    getEntityIdFromKeys([
+      BigInt(gameId),
+      BigInt(account.account.address),
+      BigInt(move.squadId),
+    ]) as Entity
+  );
 
   return (
-    <div className="flex text-xs border p-1">
-      <div className="self-center">
-        <span className="px-1">🪖 {move.squadId}</span>
+    <div className="flex text-xs border ">
+      <div className="self-center flex">
+        <span className="px-1 border bg-black text-white"> {move.squadId}</span>
+        <span className="px-1 bg-red-200">x{move.qty}</span>
         <span className="px-1 bg-orange-200">
-          ({squad && squad?.x - offset}/{squad && squad?.y - offset})
+          from ({squad && squad?.x - offset}/{squad && squad?.y - offset})
         </span>
-        <span>
-          move to{" "}
+        <span className="bg-green-200">
+          to
           <span className="px-1 bg-green-200">
             ({move.x}/{move.y})
           </span>
@@ -173,7 +219,7 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
           try {
             client.move.move_squad_commitment({
               account: account.account,
-              game_id: 1,
+              game_id: gameId,
               squad_id: move.squadId,
               hash: BigInt(move.hash),
             });
@@ -181,7 +227,7 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
             console.log(e);
           }
 
-          setMoveByDay(1, { ...move });
+          setMoveByDay(totalCycles, { ...move });
         }}
       >
         {move.committed ? "Committed" : "Commit"}
@@ -190,7 +236,7 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
         size={"sm"}
         className="text-xs"
         variant={"destructive"}
-        onClick={() => clearByDaySquadId(1, move.squadId)}
+        onClick={() => clearByDayUUID(totalCycles, move.uuid)}
       >
         x
       </Button>
@@ -199,5 +245,5 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
 };
 
 export function getCommitmentHash(keys: bigint[]): bigint {
-  return poseidonHashMany(keys);
+  return ec.starkCurve.poseidonHashMany(keys);
 }

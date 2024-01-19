@@ -9,7 +9,7 @@
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "codegen": "graphql-codegen",
-    "create-components": "npx @dojoengine/core ../contracts/target/dev/manifest.json src/dojo/contractComponents.ts http://localhost:5050 0x5adadcdbcee95d16277077e936a1437cbaa50df99d2e2b80c7b253428c74722"
+    "create-components": "npx @dojoengine/core ../contracts/target/dev/manifest.json src/dojo/generated/contractComponents.ts http://localhost:5050 0x5adadcdbcee95d16277077e936a1437cbaa50df99d2e2b80c7b253428c74722"
   },
   "dependencies": {
     "@dojoengine/core": "^0.3.2",
@@ -39,7 +39,9 @@
     "proxy-deep": "^3.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.15.0",
     "rxjs": "^7.8.1",
+    "vite-plugin-svgr": "^4.1.0",
     "starknet": "5.24.3",
     "tailwind-merge": "^2.2.0",
     "tailwindcss": "^3.4.1",

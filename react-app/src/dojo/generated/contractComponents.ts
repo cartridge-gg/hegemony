@@ -2,8 +2,6 @@
 
 import { defineComponent, Type as RecsType, World } from "@dojoengine/recs";
 
-export type ContractComponents = ReturnType<typeof defineContractComponents>;
-
 export function defineContractComponents(world: World) {
   return {
     Game: (() => {
@@ -15,11 +13,25 @@ export function defineContractComponents(world: World) {
           players: RecsType.Number,
           status: RecsType.Number,
           start_time: RecsType.Number,
+          commit_length: RecsType.Number,
+          reveal_length: RecsType.Number,
+          resolve_length: RecsType.Number,
+          cycle_unit: RecsType.Number,
         },
         {
           metadata: {
             name: "Game",
-            types: ["u32", "felt252", "u32", "enum", "u64"],
+            types: [
+              "u32",
+              "felt252",
+              "u32",
+              "enum",
+              "u64",
+              "u64",
+              "u64",
+              "u64",
+              "u64",
+            ],
             customTypes: ["GameStatus"],
           },
         }

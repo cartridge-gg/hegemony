@@ -10,7 +10,7 @@ mod spawn {
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     use hegemony::{
-        config::{CENTER_X, CENTER_Y},
+        config::{CENTER_X, CENTER_Y, STARTING_SQUAD_SIZE, REINFORCEMENT_SQUAD_SIZE},
         models::{
             position::{
                 Position, PositionSquadCount, PositionSquadEntityIdByIndex,
@@ -44,7 +44,12 @@ mod spawn {
     }
 
     fn spawn_squad(
-        world: IWorldDispatcher, player: ContractAddress, game_id: u32, hex: HexTile, squad_id: u32,
+        world: IWorldDispatcher,
+        player: ContractAddress,
+        game_id: u32,
+        hex: HexTile,
+        squad_id: u32,
+        unit_qty: u32
     ) {
         let x = hex.col;
         let y = hex.row;
@@ -75,7 +80,7 @@ mod spawn {
         };
 
         // // make a squad
-        let squad = Squad { game_id, player, squad_id, unit_qty: 10, owner: player };
+        let squad = Squad { game_id, player, squad_id, unit_qty, owner: player };
 
         set!(
             world,
@@ -133,42 +138,48 @@ mod spawn {
                 player,
                 game_id,
                 home_hex.neighbor(Direction::East),
-                player_squad_spawn_location_id(Direction::East)
+                player_squad_spawn_location_id(Direction::East),
+                STARTING_SQUAD_SIZE
             );
             spawn_squad(
                 world,
                 player,
                 game_id,
                 home_hex.neighbor(Direction::NorthEast),
-                player_squad_spawn_location_id(Direction::NorthEast)
+                player_squad_spawn_location_id(Direction::NorthEast),
+                STARTING_SQUAD_SIZE
             );
             spawn_squad(
                 world,
                 player,
                 game_id,
                 home_hex.neighbor(Direction::NorthWest),
-                player_squad_spawn_location_id(Direction::NorthWest)
+                player_squad_spawn_location_id(Direction::NorthWest),
+                STARTING_SQUAD_SIZE
             );
             spawn_squad(
                 world,
                 player,
                 game_id,
                 home_hex.neighbor(Direction::West),
-                player_squad_spawn_location_id(Direction::West)
+                player_squad_spawn_location_id(Direction::West),
+                STARTING_SQUAD_SIZE
             );
             spawn_squad(
                 world,
                 player,
                 game_id,
                 home_hex.neighbor(Direction::SouthWest),
-                player_squad_spawn_location_id(Direction::SouthWest)
+                player_squad_spawn_location_id(Direction::SouthWest),
+                STARTING_SQUAD_SIZE
             );
             spawn_squad(
                 world,
                 player,
                 game_id,
                 home_hex.neighbor(Direction::SouthEast),
-                player_squad_spawn_location_id(Direction::SouthEast)
+                player_squad_spawn_location_id(Direction::SouthEast),
+                STARTING_SQUAD_SIZE
             );
 
             set!(world, (player_squad_count));
@@ -195,7 +206,14 @@ mod spawn {
                 get!(world, (game_id, GAME_ID_CONFIG, player), GamePlayerId).id
             );
 
-            spawn_squad(world, player, game_id, IHexTile::new(x, y), player_squad_count.count);
+            spawn_squad(
+                world,
+                player,
+                game_id,
+                IHexTile::new(x, y),
+                player_squad_count.count,
+                REINFORCEMENT_SQUAD_SIZE
+            );
 
             set!(world, (player_squad_count));
         }

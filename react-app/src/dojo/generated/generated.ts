@@ -38,14 +38,26 @@ export async function setupWorld(provider: DojoProvider) {
   function game_lobby() {
     const contract_name = "game_lobby";
 
-    const create_game = async ({ account }: { account: Account }) => {
+    const create_game = async ({
+      account,
+      commit_length,
+      reveal_length,
+      resolve_length,
+      cycle_unit,
+    }: {
+      account: Account;
+      commit_length: number;
+      reveal_length: number;
+      resolve_length: number;
+      cycle_unit: number;
+    }) => {
       try {
-        return await provider.execute(
-          account,
-          contract_name,
-          "create_game",
-          []
-        );
+        return await provider.execute(account, contract_name, "create_game", [
+          commit_length,
+          reveal_length,
+          resolve_length,
+          cycle_unit,
+        ]);
       } catch (error) {
         console.error("Error executing spawn:", error);
         throw error;

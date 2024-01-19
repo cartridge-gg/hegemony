@@ -20,7 +20,7 @@ mod tests {
         },
         game::{
             Game, game, GameCount, game_count, COMMIT_TIME_HOURS, REVEAL_TIME_HOURS,
-            RESOLVE_TIME_HOURS, GamePlayerId, game_player_id
+            RESOLVE_TIME_HOURS, GamePlayerId, game_player_id, GameConfig
         },
         squad::{Squad, squad, PlayerSquadCount, player_squad_count}
     };
@@ -32,7 +32,8 @@ mod tests {
             spawn::{spawn, ISpawnDispatcher, ISpawnDispatcherTrait, ISpawn},
             combat::{combat, ICombatDispatcher, ICombatDispatcherTrait},
         },
-        config::{CENTER_X, CENTER_Y}, utils::{utils::hash_move}
+        config::{CENTER_X, CENTER_Y, STARTING_SQUAD_SIZE, REINFORCEMENT_SQUAD_SIZE},
+        utils::{utils::hash_move}
     };
 
     use poseidon::poseidon_hash_span;
@@ -106,7 +107,11 @@ mod tests {
     fn setup_game() -> (IWorldDispatcher, Systems) {
         let (world, systems) = setup_world();
 
-        systems.game_lobby_system.create_game();
+        let game_config = GameConfig {
+            commit_length: 8, reveal_length: 8, resolve_length: 8, cycle_unit: 3600
+        };
+
+        systems.game_lobby_system.create_game(game_config);
 
         (world, systems)
     }
@@ -215,15 +220,58 @@ mod tests {
         let (mut world, mut systems) = setup_game_and_spawn();
 
         let player_hex = IHexTile::new(CENTER_X, CENTER_Y);
-
         let east = player_hex.neighbor(Direction::East);
-
         let squad_id = spawn::player_squad_spawn_location_id(Direction::East);
 
         let mut current_position_entity_id = get!(
             world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex
         );
+        let squad_entity_id = poseidon_hash_span(
+            array![GAME_ID.into(), PLAYER_ONE_ADDRESS().into(), squad_id.into()].span()
+        );
 
+        // new positions
+        let x: u32 = 9;
+        let y: u32 = 8;
+
+        println!("{}", hash_move(STARTING_SQUAD_SIZE, x, y));
+
+        systems
+            .move_system
+            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
+
+        // shift time by 8hrs so the reveal can happen
+        set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
+
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE, x, y);
+
+        // check position has been updated
+        let position = get!(world, (GAME_ID, PLAYER_ONE_ADDRESS(), SQUAD_ID), Position);
+        assert(position.x == x, 'x should be equal');
+        assert(position.y == y, 'y should be equal');
+        assert(
+            get!(world, (GAME_ID, east.col, east.row), PositionSquadCount).count == 0,
+            'should be no squads'
+        );
+        assert(get!(world, (GAME_ID, x, y), PositionSquadCount).count == 1, 'should be one squad');
+        assert(
+            get!(world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex)
+                .squad__id == 0,
+            'should be empty'
+        );
+    }
+
+    #[test]
+    #[available_gas(1000000000)]
+    fn test_movement_half_squad() {
+        let (mut world, mut systems) = setup_game_and_spawn();
+
+        let player_hex = IHexTile::new(CENTER_X, CENTER_Y);
+        let east = player_hex.neighbor(Direction::East);
+        let squad_id = spawn::player_squad_spawn_location_id(Direction::East);
+        let mut current_position_entity_id = get!(
+            world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex
+        );
         let squad_entity_id = poseidon_hash_span(
             array![GAME_ID.into(), PLAYER_ONE_ADDRESS().into(), squad_id.into()].span()
         );
@@ -232,30 +280,33 @@ mod tests {
         let x: u32 = 12;
         let y: u32 = 12;
 
-        let mut pos = array![x, y];
-        let mut serialized = array![];
-        pos.serialize(ref serialized);
-
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID, poseidon_hash_span(serialized.span()));
+            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE - 1, x, y));
+
+        assert(
+            get!(world, (GAME_ID, east.col, east.row), PositionSquadCount).count == 1,
+            'should be one squad'
+        );
 
         // shift time by 8hrs so the reveal can happen
         set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
 
-        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, x, y);
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE - 1, x, y);
 
         // check position has been updated
         let position = get!(world, (GAME_ID, PLAYER_ONE_ADDRESS(), SQUAD_ID), Position);
         assert(position.x == x, 'x should be equal');
         assert(position.y == y, 'y should be equal');
-
-        // check previous position has been cleared
-        let current_position_entity_id_old = get!(
-            world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex
+        assert(
+            get!(world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex)
+                .squad__id == 0,
+            'should be empty'
         );
-
-        assert(current_position_entity_id_old.squad__id == 0, 'should be empty');
+        assert(
+            get!(world, (GAME_ID, east.col, east.row), PositionSquadCount).count == 1,
+            'should be one squad'
+        );
     }
 
 
@@ -268,18 +319,22 @@ mod tests {
         let x: u32 = 12;
         let y: u32 = 12;
 
-        systems.move_system.move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(x, y));
+        systems
+            .move_system
+            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
 
         starknet::testing::set_contract_address(PLAYER_TWO_ADDRESS());
-        systems.move_system.move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(x, y));
+        systems
+            .move_system
+            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
 
         // shift time by 8hrs so the reveal can happen
         set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
 
-        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, x, y);
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE, x, y);
 
         starknet::testing::set_contract_address(PLAYER_ONE_ADDRESS());
-        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, x, y);
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE, x, y);
 
         // shift time to resolve
         set_block_timestamp(60 * 60 * 2 * COMMIT_TIME_HOURS + 1);
@@ -288,6 +343,10 @@ mod tests {
         systems.combat_system.resolve_combat(GAME_ID, x, y);
 
         let resolved_position_null = get!(world, (GAME_ID, x, y), PositionSquadCount);
+
+        let count = get!(world, (GAME_ID, x, y), PositionSquadCount).count;
+
+        println!("count {}", count);
 
         assert(resolved_position_null.count == 0, 'should be empty');
     }
@@ -305,5 +364,46 @@ mod tests {
         let new_position_squads = get!(world, (GAME_ID, CENTER_X, CENTER_Y), PositionSquadCount);
 
         assert(new_position_squads.count == 1, 'should have 1 squad');
+    }
+
+    #[test]
+    #[available_gas(1000000000)]
+    fn test_combat_with_p1_lose() {
+        let (mut world, mut systems) = setup_game_and_spawn();
+
+        // new positions
+        let x: u32 = 12;
+        let y: u32 = 12;
+
+        systems
+            .move_system
+            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
+
+        starknet::testing::set_contract_address(PLAYER_TWO_ADDRESS());
+        systems
+            .move_system
+            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE - 1, x, y));
+
+        // shift time by 8hrs so the reveal can happen
+        set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
+
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE - 1, x, y);
+
+        starknet::testing::set_contract_address(PLAYER_ONE_ADDRESS());
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE, x, y);
+
+        // shift time to resolve
+        set_block_timestamp(60 * 60 * 2 * COMMIT_TIME_HOURS + 1);
+
+        let count = get!(world, (GAME_ID, x, y), PositionSquadCount).count;
+
+        println!("count {}", count);
+
+        assert(get!(world, (GAME_ID, x, y), PositionSquadCount).count == 2, 'should be two squads');
+
+        // resolve
+        systems.combat_system.resolve_combat(GAME_ID, x, y);
+
+        assert(get!(world, (GAME_ID, x, y), PositionSquadCount).count == 1, 'should be one squad');
     }
 }

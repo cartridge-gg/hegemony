@@ -1,33 +1,45 @@
-import { useMoveStore } from "@/store";
+import { Move, useMoveStore } from "@/store";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../dojoConfig";
 import { Call } from "starknet";
+import { useQueryParams } from "./useQueryParams";
 
 export const useCommitTransaction = () => {
   const { manifest } = dojoConfig();
+  const { gameId } = useQueryParams();
   const gameDay = 1;
-  const loadMovesByDay = useMoveStore((state) => state.loadMovesByDay);
 
+  const loadMovesByDay = useMoveStore((state) => state.loadMovesByDay);
   const setMoveByDay = useMoveStore((state) => state.setMoveByDay);
 
-  const movesCommitArray = (): Call[] => {
-    return Object.values(loadMovesByDay(gameDay)).map((move) => {
-      setMoveByDay(gameDay, { ...move, committed: true });
+  const moveRevealArray = (): Call[] => {
+    const moves = loadMovesByDay(gameDay);
+
+    moves.forEach((move) => {
+      setMoveByDay(gameDay, { ...move, revealed: true });
+    });
+
+    return moves.map((move) => {
       return {
-        entrypoint: "move_squad_commitment",
+        entrypoint: "move_squad_reveal",
         contractAddress: getContractByName(manifest, "move"),
-        calldata: [gameDay, move.squadId, move.hash],
+        calldata: [gameDay, move.squadId, move.qty, move.x, move.y],
       };
     });
   };
 
-  const moveRevealArray = (): Call[] => {
-    return Object.values(loadMovesByDay(gameDay)).map((move) => {
-      setMoveByDay(gameDay, { ...move, revealed: true });
+  const movesCommitArray = (): Call[] => {
+    const moves = loadMovesByDay(gameDay);
+
+    moves.forEach((move) => {
+      setMoveByDay(gameDay, { ...move, committed: true });
+    });
+
+    return moves.map((move) => {
       return {
         entrypoint: "move_squad_commitment",
         contractAddress: getContractByName(manifest, "move"),
-        calldata: [gameDay, move.squadId, move.x, move.y],
+        calldata: [gameDay, move.squadId, move.hash],
       };
     });
   };

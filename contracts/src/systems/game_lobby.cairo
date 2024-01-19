@@ -1,9 +1,10 @@
 #[starknet::interface]
 trait IGameLobby<TContractState> {
-    fn create_game(self: @TContractState);
+    fn create_game(self: @TContractState, config: hegemony::models::game::GameConfig);
     fn join_game(self: @TContractState, game_id: u32);
     fn start_game(self: @TContractState, game_id: u32);
 }
+
 
 #[dojo::contract]
 mod game_lobby {
@@ -16,13 +17,15 @@ mod game_lobby {
     use hegemony::models::{
         position::Position, squad::Squad,
         game::{
-            GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus, GameTrait, GamePlayerId
+            GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus, GameTrait, GamePlayerId,
+            GameConfig
         }
     };
 
+
     #[external(v0)]
     impl GameImpl of IGameLobby<ContractState> {
-        fn create_game(self: @ContractState) {
+        fn create_game(self: @ContractState, config: GameConfig) {
             let world = self.world();
 
             // increment game count
@@ -35,6 +38,10 @@ mod game_lobby {
                 players: 0,
                 status: GameStatus::Lobby,
                 start_time: 0,
+                commit_length: config.commit_length,
+                reveal_length: config.reveal_length,
+                resolve_length: config.resolve_length,
+                cycle_unit: config.cycle_unit
             };
 
             set!(world, (game_count, game));
