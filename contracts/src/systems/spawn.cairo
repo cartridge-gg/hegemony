@@ -14,12 +14,15 @@ mod spawn {
         models::{
             position::{
                 Position, PositionSquadCount, PositionSquadEntityIdByIndex,
-                PositionSquadIndexByEntityId, Base
+                PositionSquadIndexByEntityId, Base, PlayerEnergySourceCount, ENERGY_CONSTANT_ID,
+                EnergySource
             },
             squad::{Squad, PlayerSquadCount},
             game::{GameCount, GAME_ID_CONFIG, Game, GameStatus, GameTrait, GamePlayerId}
         },
     };
+
+    use hegemony::{systems::{move::{move}}};
 
     use poseidon::poseidon_hash_span;
 
@@ -132,6 +135,10 @@ mod spawn {
             let base = Base { game_id, player, x, y };
             set!(world, (base));
 
+            let energy_source = EnergySource {
+                game_id, energy_constant_id: ENERGY_CONSTANT_ID, x, y, owner: player
+            };
+
             // spawn squad around spawn location
             spawn_squad(
                 world,
@@ -182,10 +189,11 @@ mod spawn {
                 STARTING_SQUAD_SIZE
             );
 
-            set!(world, (player_squad_count));
+            set!(world, (player_squad_count, energy_source));
         }
 
         // spawn new units every 3 cycles
+        // TODO: restrict spawn once
         fn spawn_new_units(self: @ContractState, game_id: u32) {
             let world = self.world();
             let game = get!(world, (game_id, GAME_ID_CONFIG), Game);
@@ -198,24 +206,52 @@ mod spawn {
 
             let player = get_caller_address();
 
-            // // increment squads
-            let mut player_squad_count = get!(world, (game_id, player), PlayerSquadCount);
-            player_squad_count.count += 1;
-
             let (x, y) = get_player_position(
                 get!(world, (game_id, GAME_ID_CONFIG, player), GamePlayerId).id
             );
 
-            spawn_squad(
-                world,
-                player,
-                game_id,
-                IHexTile::new(x, y),
-                player_squad_count.count,
-                REINFORCEMENT_SQUAD_SIZE
-            );
+            let players_squads_on_position = move::get_squads_on_position(world, game_id, x, y);
 
-            set!(world, (player_squad_count));
+            // get captured energy source count
+            let player_energy_source_count = get!(
+                world, (game_id, player, ENERGY_CONSTANT_ID), PlayerEnergySourceCount
+            )
+                .count;
+
+            let reinforcement_squad_size = REINFORCEMENT_SQUAD_SIZE
+                * (player_energy_source_count + 1);
+
+            // check if squad on starting hex_map
+            // IF squad on starting hex -> merge
+            // ELSE spawn new squad
+            // TODO: Abastract this out
+            if (players_squads_on_position.len() > 0) {
+                let mut merged_squad = move::merge_player_squads(
+                    players_squads_on_position.span(), player
+                );
+
+                merged_squad.unit_qty += reinforcement_squad_size;
+
+                println!("merged_squad.unit_qty: {}", merged_squad.unit_qty);
+                merged_squad.game_id = game_id;
+                merged_squad.player = player;
+
+                set!(world, (merged_squad));
+            } else {
+                let mut player_squad_count = get!(world, (game_id, player), PlayerSquadCount);
+                player_squad_count.count += 1;
+
+                spawn_squad(
+                    world,
+                    player,
+                    game_id,
+                    IHexTile::new(x, y),
+                    player_squad_count.count,
+                    reinforcement_squad_size
+                );
+
+                set!(world, (player_squad_count));
+            }
         }
     }
 }
@@ -236,14 +272,10 @@ mod tests {
 
         let (x, y) = spawn::get_player_position(2);
 
-        println!("x: {}, y: {}", x, y);
-
         assert(x == CENTER_X + 8, 'x should be center + 8');
         assert(y == CENTER_Y + 8, 'y should be center - 8');
 
         let (x, y) = spawn::get_player_position(3);
-
-        println!("x: {}, y: {}", x, y);
 
         assert(x == CENTER_X + 16, 'x should be center + 16');
         assert(y == CENTER_Y + 8, 'y should be center - 8');

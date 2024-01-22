@@ -14,7 +14,7 @@ mod move {
     use hegemony::models::{
         position::{
             Position, SquadCommitmentHash, PositionSquadCount, PositionSquadEntityIdByIndex,
-            PositionSquadIndexByEntityId
+            PositionSquadIndexByEntityId, EnergySource, PlayerEnergySourceCount, ENERGY_CONSTANT_ID
         },
         squad::{Squad, PlayerSquadCount},
         game::{GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus, GameTrait}
@@ -28,6 +28,7 @@ mod move {
 
     use origami::map::hex::{hex::IHexTile, types::{HexTile, Direction, DirectionIntoFelt252}};
 
+    use alexandria_data_structures::array_ext::{ArrayTraitExt, SpanTraitExt};
 
     #[external(v0)]
     impl MoveImpl of IMove<ContractState> {
@@ -63,130 +64,211 @@ mod move {
                 PositionSquadCount
             );
 
-            let mut player_squad_count = get!(world, (game_id, player), PlayerSquadCount);
-
+            // assert
             assert(unit_qty <= squad.unit_qty, 'Too many units to move');
 
-            // increment squad count on new hex
-            let mut move_to_position_count = get!(world, (game_id, x, y), PositionSquadCount);
+            // check hash
+            check_hash(world, game_id, player, squad_id, unit_qty, x, y);
 
-            if (unit_qty < squad.unit_qty) {
-                commit_move(
-                    world,
-                    squad_current_position,
-                    move_to_position_count,
-                    game_id,
-                    player,
-                    squad_id,
-                    unit_qty,
-                    x,
-                    y
+            let mut player_squad_count = get!(world, (game_id, player), PlayerSquadCount);
+            player_squad_count.count += 1;
+
+            let players_squads_on_position = get_player_squads_on_position(
+                get_squads_on_position(world, game_id, x, y).span(), player
+            );
+
+            // TODO: ABSTRACT THIS - this is nasty
+            if (players_squads_on_position.len() > 0) {
+                let mut merged_squad = merge_player_squads(
+                    players_squads_on_position.span(), player
                 );
 
-                // spawn new squad
-                spawn::spawn_squad(world, player, game_id, IHexTile::new(x, y), squad_id, unit_qty);
+                merged_squad.unit_qty += unit_qty;
+                merged_squad.game_id = game_id;
+                merged_squad.player = player;
 
-                // update current squad
-                squad.unit_qty -= unit_qty;
+                set!(world, (merged_squad));
 
-                // update player squad count
-                player_squad_count.count += 1;
+                if (unit_qty < squad.unit_qty) {
+                    squad.unit_qty -= unit_qty;
+                    spawn::spawn_squad(
+                        world,
+                        player,
+                        game_id,
+                        IHexTile::new(squad_current_position.x, squad_current_position.y),
+                        player_squad_count.count,
+                        unit_qty
+                    );
+                }
+            } else {
+                if (unit_qty < squad.unit_qty) {
+                    // @dev Splitting the squads. We spawn a new squad at the location of movement with the existing squad id. And we spawn a new squad at the current location with a new id. 
 
-                // assert
-                assert(squad.unit_qty >= 0, 'Squad unit qty must');
+                    // spawn new squad moving to new position
+                    spawn::spawn_squad(
+                        world, player, game_id, IHexTile::new(x, y), squad_id, unit_qty
+                    );
 
-                // if no troops left 0 out the position count
-                if (squad.unit_qty == 0) {
+                    // subtract unit qty from current squad
+                    squad.unit_qty -= unit_qty;
+
+                    // spawn new squad on current position
+                    spawn::spawn_squad(
+                        world,
+                        player,
+                        game_id,
+                        IHexTile::new(squad_current_position.x, squad_current_position.y),
+                        player_squad_count.count,
+                        unit_qty
+                    );
+
+                    // assert
+                    assert(squad.unit_qty >= 0, 'Squad unit not enough');
+
+                    // if no troops left 0 out the position count
+                    if (squad.unit_qty == 0) {
+                        if (x != squad_current_position.x && y != squad_current_position.y) {
+                            current_position_squad_count.count -= 1;
+                        }
+                    }
+                } else {
+                    // increment squad count on new hex
+                    let mut move_to_position_count = get!(
+                        world, (game_id, x, y), PositionSquadCount
+                    );
+                    move_to_position_count.count += 1;
+
+                    set!(
+                        world,
+                        (
+                            move_to_position_count,
+                            Position { game_id, player, squad_id, x, y },
+                            PositionSquadEntityIdByIndex {
+                                game_id,
+                                x,
+                                y,
+                                squad_position_index: move_to_position_count.count,
+                                squad__game_id: game_id,
+                                squad__player_id: player,
+                                squad__id: squad_id
+                            }
+                        )
+                    );
+
                     if (x != squad_current_position.x && y != squad_current_position.y) {
                         current_position_squad_count.count -= 1;
                     }
                 }
-            } else {
-                move_to_position_count.count += 1;
-                commit_move(
-                    world,
-                    squad_current_position,
-                    move_to_position_count,
-                    game_id,
-                    player,
-                    squad_id,
-                    unit_qty,
-                    x,
-                    y
-                );
-
-                if (x != squad_current_position.x && y != squad_current_position.y) {
-                    current_position_squad_count.count -= 1;
-                }
             }
 
+            // split squad
+
+            delete_squad_from_position(world, squad_current_position, game_id, squad_id, player);
             set!(world, (current_position_squad_count, squad, player_squad_count));
+
+            if (is_energy_source(x, y)) {
+                capture_energy_source(world, game_id, x, y, player);
+            }
         }
     }
 
+    fn get_player_squads_on_position(
+        mut squads: Span<Squad>, player: ContractAddress
+    ) -> Array<Squad> {
+        let mut player_squads: Array<Squad> = ArrayTrait::new();
 
-    fn commit_move(
-        world: IWorldDispatcher,
-        squad_current_position: Position,
-        move_to_position_count: PositionSquadCount,
-        game_id: u32,
-        player: ContractAddress,
-        squad_id: u32,
-        unit_qty: u32,
-        x: u32,
-        y: u32
-    ) {
-        check_hash(world, game_id, player, squad_id, unit_qty, x, y);
-
-        // set squad position
-        let move_to_position = Position { game_id, player, squad_id, x, y };
-
-        // hash entity_id
-        let squad_entity_id = poseidon_hash_span(
-            array![game_id.into(), player.into(), squad_id.into()].span()
-        );
-
-        // set squad index on new position
-        let move_to_position_squad_index = PositionSquadEntityIdByIndex {
-            game_id,
-            x,
-            y,
-            squad_position_index: move_to_position_count.count,
-            squad__game_id: game_id,
-            squad__player_id: player,
-            squad__id: squad_id
+        loop {
+            match squads.pop_front() {
+                Option::Some(v) => { if (*v.owner == player) {
+                    player_squads.append(*v);
+                }; },
+                Option::None => { break; }
+            };
         };
+        player_squads
+    }
 
+    // UPDATE: we don't need to loop if merging everywhere
+    fn merge_player_squads(mut squads: Span<Squad>, player: ContractAddress) -> Squad {
+        let mut new_squad = Squad { game_id: 0, player, squad_id: 0, unit_qty: 0, owner: player };
+
+        let mut index_to_access = 0;
+
+        loop {
+            match squads.pop_front() {
+                Option::Some(v) => {
+                    new_squad.unit_qty += *v.unit_qty;
+                    new_squad.squad_id = *v.squad_id;
+                },
+                Option::None => { break; }
+            };
+        };
+        new_squad
+    }
+
+    fn delete_squad_from_position(
+        world: IWorldDispatcher,
+        position: Position,
+        game_id: u32,
+        squad_id: u32,
+        player: ContractAddress,
+    ) {
         // clears the index of the squad on the current position
+        // TODO: we need to pop the array in the future, but idk what is more gassy....
         let current_position_squad_index = get!(
             world,
-            (game_id, squad_current_position.x, squad_current_position.y, squad_entity_id),
+            (
+                game_id,
+                position.x,
+                position.y,
+                poseidon_hash_span(array![game_id.into(), player.into(), squad_id.into()].span())
+            ),
             PositionSquadIndexByEntityId
         )
             .squad_position_index;
         let mut current_position_entity_id = get!(
             world,
-            (
-                game_id,
-                squad_current_position.x,
-                squad_current_position.y,
-                current_position_squad_index
-            ),
+            (game_id, position.x, position.y, current_position_squad_index),
             PositionSquadEntityIdByIndex
         );
-        current_position_entity_id.squad__game_id = 0;
-        current_position_entity_id.squad__player_id = 0.try_into().unwrap();
-        current_position_entity_id.squad__id = 0;
 
-        set!(
-            world,
-            (
-                current_position_entity_id,
-                move_to_position,
-                move_to_position_count,
-                move_to_position_squad_index,
-            )
-        );
+        delete!(world, (current_position_entity_id));
+    }
+
+    fn get_squads_on_position(
+        world: IWorldDispatcher, game_id: u32, x: u32, y: u32
+    ) -> Array<Squad> {
+        let position_squad_count = get!(world, (game_id, x, y), PositionSquadCount).count;
+
+        let mut squads = ArrayTrait::<Squad>::new();
+        let mut index: usize = 1;
+
+        let mut num_squads: usize = 0;
+
+        loop {
+            if (num_squads >= position_squad_count.into()) {
+                break;
+            }
+
+            let mut squad_id = get!(world, (game_id, x, y, index), PositionSquadEntityIdByIndex);
+
+            if (squad_id.squad__id != 0) {
+                let mut squad = get!(
+                    world,
+                    (squad_id.squad__game_id, squad_id.squad__player_id, squad_id.squad__id),
+                    Squad
+                );
+
+                squads.append(squad);
+
+                // only count if not empty // should be fixed later
+                num_squads += 1;
+            }
+
+            index += 1;
+        };
+
+        squads
     }
 
     fn check_hash(
@@ -204,5 +286,177 @@ mod move {
             poseidon_hash_span(array![unit_qty.into(), x.into(), y.into()].span()) == hash,
             'Does not match'
         );
+    }
+
+    fn is_energy_source(x: u32, y: u32) -> bool {
+        // Define the distance between energy sources
+        let distance = 10;
+
+        // Adjust for the hex grid's offset pattern
+        if (x + y) % (2 * distance) == 0 {
+            return true;
+        }
+
+        false
+    }
+
+    fn capture_energy_source(
+        world: IWorldDispatcher, game_id: u32, x: u32, y: u32, player: ContractAddress
+    ) {
+        // check occupied space
+        let mut energy_source = get!(world, (game_id, ENERGY_CONSTANT_ID, x, y), EnergySource);
+
+        if (energy_source.owner.into() == 0) {
+            // set owner
+            energy_source.owner = player;
+
+            let mut player_energy_source_count = get!(
+                world, (game_id, player, ENERGY_CONSTANT_ID), PlayerEnergySourceCount
+            );
+
+            player_energy_source_count.count += 1;
+
+            set!(world, (energy_source, player_energy_source_count));
+        } else {
+            // check if owner is the same
+            if (energy_source.owner != player) {
+                // check if owner is the same
+                let mut player_energy_source_count = get!(
+                    world, (game_id, player, ENERGY_CONSTANT_ID), PlayerEnergySourceCount
+                );
+
+                player_energy_source_count.count += 1;
+
+                let mut enemy_player_energy_source_count = get!(
+                    world,
+                    (game_id, energy_source.owner, ENERGY_CONSTANT_ID),
+                    PlayerEnergySourceCount
+                );
+
+                enemy_player_energy_source_count.count -= 1;
+
+                energy_source.owner = player;
+
+                set!(
+                    world,
+                    (energy_source, player_energy_source_count, enemy_player_energy_source_count)
+                );
+            }
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::move;
+    use hegemony::{config::{CENTER_X, CENTER_Y}};
+    use hegemony::models::{
+        position::{
+            Position, SquadCommitmentHash, PositionSquadCount, PositionSquadEntityIdByIndex,
+            PositionSquadIndexByEntityId
+        },
+        squad::{Squad, PlayerSquadCount},
+        game::{GameCount, GAME_COUNT_CONFIG, Game, GAME_ID_CONFIG, GameStatus, GameTrait}
+    };
+
+    use starknet::{ContractAddress, contract_address_const, get_caller_address};
+
+    fn OWNER() -> ContractAddress {
+        1.try_into().unwrap()
+    }
+
+    fn PLAYER_TWO() -> ContractAddress {
+        2.try_into().unwrap()
+    }
+
+    fn create_squads() -> Array<Squad> {
+        let mut squads: Array<Squad> = ArrayTrait::new();
+
+        squads
+            .append(
+                Squad { game_id: 1, player: OWNER(), squad_id: 1, unit_qty: 1, owner: OWNER() }
+            );
+        squads
+            .append(
+                Squad {
+                    game_id: 1, player: PLAYER_TWO(), squad_id: 2, unit_qty: 1, owner: PLAYER_TWO()
+                }
+            );
+        squads
+            .append(
+                Squad {
+                    game_id: 1, player: PLAYER_TWO(), squad_id: 3, unit_qty: 1, owner: PLAYER_TWO()
+                }
+            );
+        squads
+            .append(
+                Squad { game_id: 1, player: OWNER(), squad_id: 4, unit_qty: 1, owner: OWNER() }
+            );
+        squads
+            .append(
+                Squad {
+                    game_id: 1, player: PLAYER_TWO(), squad_id: 5, unit_qty: 1, owner: PLAYER_TWO()
+                }
+            );
+        squads
+            .append(
+                Squad { game_id: 1, player: OWNER(), squad_id: 6, unit_qty: 1, owner: OWNER() }
+            );
+        squads
+            .append(
+                Squad { game_id: 1, player: OWNER(), squad_id: 7, unit_qty: 1, owner: OWNER() }
+            );
+        squads
+            .append(
+                Squad { game_id: 1, player: OWNER(), squad_id: 8, unit_qty: 1, owner: OWNER() }
+            );
+
+        squads
+    }
+
+    #[test]
+    #[available_gas(3000000000)]
+    fn test_get_player_squads() {
+        let squads = create_squads();
+
+        let player_squads = move::get_player_squads_on_position(squads.span(), OWNER());
+
+        assert(player_squads.len() == 5, 'Should be 5 squads');
+    }
+
+    #[test]
+    #[available_gas(3000000000)]
+    fn test_merge_player_squads() {
+        let squads = create_squads();
+
+        let player_squads = move::get_player_squads_on_position(squads.span(), OWNER());
+
+        assert(player_squads.len() == 5, 'Should be 5 squads');
+
+        let merged_squad = move::merge_player_squads(player_squads.span(), OWNER());
+
+        assert(merged_squad.unit_qty == 5, 'Should be 5 units');
+    }
+
+    #[test]
+    fn test_energy_source_true() {
+        assert(move::is_energy_source(0, 0), 'energy 0,0'); // Both coordinates are 0
+        assert(
+            move::is_energy_source(10, 10), 'energy 10,10'
+        ); // Both coordinates are at a distance
+        assert(
+            move::is_energy_source(20, 0), 'energy 20,0'
+        ); // One coordinate at double the distance
+    }
+
+    #[test]
+    fn test_energy_source_false() {
+        assert(!move::is_energy_source(1, 0), 'not energy 1,0'); // Off by one
+        assert(
+            !move::is_energy_source(5, 5), 'not energy 5,5'
+        ); // Coordinates not meeting the condition
+        assert(!move::is_energy_source(3, 4), 'not energy 3,4'); // Random coordinates
+    // Add more cases as needed
     }
 }

@@ -14,7 +14,10 @@ mod combat {
         game::{GameCount, GAME_ID_CONFIG, Game, GameStatus, GameTrait}
     };
 
+    use hegemony::systems::{move::move};
+
     use alexandria_data_structures::array_ext::{ArrayTraitExt, SpanTraitExt};
+
 
     #[external(v0)]
     impl CombatImpl of ICombat<ContractState> {
@@ -24,37 +27,7 @@ mod combat {
 
             get!(world, (game_id, GAME_ID_CONFIG), Game).assert_resolve_stage();
 
-            let position_squad_count = get!(world, (game_id, x, y), PositionSquadCount).count;
-
-            let mut squads = ArrayTrait::<Squad>::new();
-            let mut index: usize = 1;
-
-            let mut num_squads: usize = 0;
-
-            loop {
-                if (num_squads >= position_squad_count.into()) {
-                    break;
-                }
-
-                let mut squad_id = get!(
-                    world, (game_id, x, y, index), PositionSquadEntityIdByIndex
-                );
-
-                if (squad_id.squad__id != 0) {
-                    let mut squad = get!(
-                        world,
-                        (squad_id.squad__game_id, squad_id.squad__player_id, squad_id.squad__id),
-                        Squad
-                    );
-
-                    squads.append(squad);
-
-                    // only count if not empty // should be fixed later
-                    num_squads += 1;
-                }
-
-                index += 1;
-            };
+            let squads = move::get_squads_on_position(world, game_id, x, y);
 
             if (squads.len() > 1) {
                 let mut squad_one = *squads.at(0);

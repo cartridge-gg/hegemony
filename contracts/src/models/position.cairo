@@ -1,5 +1,7 @@
 use starknet::{ContractAddress};
 
+const ENERGY_CONSTANT_ID: felt252 = 'energy_constant';
+
 #[derive(Model, Copy, Drop, Serde, Print)]
 struct Position {
     #[key]
@@ -22,6 +24,31 @@ struct Base {
     x: u32,
     y: u32,
 }
+
+#[derive(Model, Copy, Drop, Serde, Print)]
+struct EnergySource {
+    #[key]
+    game_id: u32,
+    #[key]
+    energy_constant_id: felt252,
+    #[key]
+    x: u32,
+    #[key]
+    y: u32,
+    owner: ContractAddress,
+}
+
+#[derive(Model, Copy, Drop, Serde, Print)]
+struct PlayerEnergySourceCount {
+    #[key]
+    game_id: u32,
+    #[key]
+    owner: ContractAddress,
+    #[key]
+    energy_constant_id: felt252,
+    count: u32,
+}
+
 
 // two models to allow the creation of an array on each hex
 #[derive(Model, Copy, Drop, Serde, Print)]

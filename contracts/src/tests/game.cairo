@@ -16,7 +16,8 @@ mod tests {
             Position, position, SquadCommitmentHash, squad_commitment_hash,
             PositionSquadEntityIdByIndex, position_squad_entity_id_by_index, PositionSquadCount,
             position_squad_count, PositionSquadIndexByEntityId, position_squad_index_by_entity_id,
-            Base, base
+            Base, base, EnergySource, energy_source, PlayerEnergySourceCount,
+            player_energy_source_count
         },
         game::{
             Game, game, GameCount, game_count, COMMIT_TIME_HOURS, REVEAL_TIME_HOURS,
@@ -356,7 +357,7 @@ mod tests {
     fn test_new_unit_spawn() {
         let (mut world, mut systems) = setup_game_and_spawn();
 
-        // shift time by 8hrs so the reveal can happen
+        // shift time by 3 days
         set_block_timestamp(60 * 60 * 64 + 1);
 
         systems.spawn_system.spawn_new_units(GAME_ID);
@@ -364,6 +365,44 @@ mod tests {
         let new_position_squads = get!(world, (GAME_ID, CENTER_X, CENTER_Y), PositionSquadCount);
 
         assert(new_position_squads.count == 1, 'should have 1 squad');
+    }
+
+    #[test]
+    #[available_gas(1000000000)]
+    fn test_new_unit_spawn_when_occupied() {
+        let (mut world, mut systems) = setup_game_and_spawn();
+
+        systems
+            .move_system
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, CENTER_X, CENTER_Y)
+            );
+
+        // shift time by 8hrs so the reveal can happen
+        set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
+
+        systems
+            .move_system
+            .move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE, CENTER_X, CENTER_Y);
+
+        // shift time by 3 days
+        set_block_timestamp(60 * 60 * 64 + 1);
+
+        systems.spawn_system.spawn_new_units(GAME_ID);
+
+        let new_position_squads = get!(world, (GAME_ID, CENTER_X, CENTER_Y), PositionSquadCount);
+
+        assert(new_position_squads.count == 1, 'should have 1 squad');
+
+        let entity_id = get!(world, (GAME_ID, CENTER_X, CENTER_Y, 1), PositionSquadEntityIdByIndex);
+
+        let squad = get!(
+            world,
+            (entity_id.squad__game_id, entity_id.squad__player_id, entity_id.squad__id),
+            Squad
+        );
+
+        assert(squad.unit_qty == STARTING_SQUAD_SIZE * 2, 'should be two squads');
     }
 
     #[test]
@@ -405,5 +444,58 @@ mod tests {
         systems.combat_system.resolve_combat(GAME_ID, x, y);
 
         assert(get!(world, (GAME_ID, x, y), PositionSquadCount).count == 1, 'should be one squad');
+    }
+
+    #[test]
+    #[available_gas(1000000000)]
+    fn test_movement_to_self_occupied_position() {
+        let (mut world, mut systems) = setup_game_and_spawn();
+
+        let player_hex = IHexTile::new(CENTER_X, CENTER_Y);
+        let east = player_hex.neighbor(Direction::East);
+        let squad_id = spawn::player_squad_spawn_location_id(Direction::East);
+        let mut current_position_entity_id = get!(
+            world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex
+        );
+
+        // new positions
+        let x: u32 = 12;
+        let y: u32 = 12;
+
+        systems
+            .move_system
+            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
+
+        assert(
+            get!(world, (GAME_ID, east.col, east.row), PositionSquadCount).count == 1,
+            'should be one squad'
+        );
+
+        // shift time by 8hrs so the reveal can happen
+        set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
+
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE, x, y);
+
+        set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS * 3 + 1);
+
+        systems
+            .move_system
+            .move_squad_commitment(GAME_ID, SQUAD_ID + 1, hash_move(STARTING_SQUAD_SIZE, x, y));
+
+        set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS * 4 + 1);
+
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID + 1, STARTING_SQUAD_SIZE, x, y);
+
+        assert(get!(world, (GAME_ID, x, y), PositionSquadCount).count == 1, 'should be one squad');
+
+        let entity_id = get!(world, (GAME_ID, x, y, 1), PositionSquadEntityIdByIndex);
+
+        let squad = get!(
+            world,
+            (entity_id.squad__game_id, entity_id.squad__player_id, entity_id.squad__id),
+            Squad
+        );
+
+        assert(squad.unit_qty == STARTING_SQUAD_SIZE * 2, 'should be two squads');
     }
 }
