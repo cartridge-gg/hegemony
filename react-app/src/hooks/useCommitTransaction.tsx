@@ -1,47 +1,81 @@
 import { Move, useMoveStore } from "@/store";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../dojoConfig";
-import { Call } from "starknet";
+import { Call, num } from "starknet";
 import { useQueryParams } from "./useQueryParams";
+import { useGameState } from "./useGameState";
+import { useMemo } from "react";
+import { offset } from "@/utils";
 
 export const useCommitTransaction = () => {
   const { manifest } = dojoConfig();
   const { gameId } = useQueryParams();
-  const gameDay = 1;
+
+  const { totalCycles, currentStage, isCommitStage, isResolveStage } =
+    useGameState();
 
   const loadMovesByDay = useMoveStore((state) => state.loadMovesByDay);
   const setMoveByDay = useMoveStore((state) => state.setMoveByDay);
 
-  const moveRevealArray = (): Call[] => {
-    const moves = loadMovesByDay(gameDay);
+  const moves = useMemo(() => {
+    return loadMovesByDay(totalCycles);
+  }, [totalCycles]);
 
-    moves.forEach((move) => {
-      setMoveByDay(gameDay, { ...move, revealed: true });
+  const moveRevealArray = (): Call[] => {
+    const updatedMoves = moves.map((move) => ({
+      ...move,
+      revealed: true,
+    }));
+
+    console.log(updatedMoves);
+
+    updatedMoves.forEach((updatedMove) => {
+      setMoveByDay(totalCycles, updatedMove);
     });
 
-    return moves.map((move) => {
+    return updatedMoves.map((move) => {
       return {
         entrypoint: "move_squad_reveal",
         contractAddress: getContractByName(manifest, "move"),
-        calldata: [gameDay, move.squadId, move.qty, move.x, move.y],
+        calldata: [
+          gameId,
+          move.squadId,
+          move.qty,
+          move.x + offset,
+          move.y + offset,
+        ],
       };
     });
   };
 
   const movesCommitArray = (): Call[] => {
-    const moves = loadMovesByDay(gameDay);
+    console.log(moves);
+    // Create a new array with updated items
+    const updatedMoves = moves.map((move) => ({
+      ...move,
+      committed: true,
+    }));
 
-    moves.forEach((move) => {
-      setMoveByDay(gameDay, { ...move, committed: true });
+    console.log(updatedMoves);
+
+    // Update the state with the new array
+    updatedMoves.forEach((updatedMove) => {
+      setMoveByDay(totalCycles, updatedMove);
     });
 
-    return moves.map((move) => {
-      return {
+    console.log(
+      updatedMoves.map((move) => ({
         entrypoint: "move_squad_commitment",
         contractAddress: getContractByName(manifest, "move"),
-        calldata: [gameDay, move.squadId, move.hash],
-      };
-    });
+        calldata: [gameId, move.squadId, num.toBigInt(move.hash)],
+      }))
+    );
+
+    return updatedMoves.map((move) => ({
+      entrypoint: "move_squad_commitment",
+      contractAddress: getContractByName(manifest, "move"),
+      calldata: [gameId, move.squadId, num.toBigInt(move.hash)],
+    }));
   };
 
   return {

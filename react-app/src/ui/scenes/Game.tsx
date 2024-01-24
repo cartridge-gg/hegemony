@@ -4,6 +4,7 @@ import {
   PerspectiveCamera,
   MapControls,
   Bounds,
+  Environment,
 } from "@react-three/drei";
 import { HexagonBackground } from "../components/three/HexagonBackground";
 import { MovementArrows } from "../components/three/Arrows";
@@ -40,7 +41,8 @@ const HexagonGrid = ({ rows, cols, hexRadius }: any) => {
 
 export const Game = () => {
   return (
-    <Canvas shadows>
+    <Canvas shadows color={"black"}>
+      <color attach="background" args={["#ADD8E6"]} />
       <mesh>
         <PerspectiveCamera
           makeDefault
@@ -63,6 +65,7 @@ export const Game = () => {
           </Bounds>
           <MovementArrows />
         </mesh>
+        <Environment preset="dawn" />
       </mesh>
     </Canvas>
   );

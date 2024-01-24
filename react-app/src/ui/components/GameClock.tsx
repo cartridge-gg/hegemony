@@ -12,8 +12,10 @@ export const GameClock = () => {
   } = useGameState();
 
   return (
-    <div className="fixed top-0 right-0 p-2 bg-white z-10 border-b border-l border-black flex text-sm uppercase space-x-6">
-      <div className={`${currentStageColour} self-center`}>
+    <div
+      className={`${currentStageColour} px-2 fixed top-0 left-0 z-10 border border-black flex text-sm uppercase space-x-6 text-xl`}
+    >
+      <div className={` self-center`}>
         {currentStage}: {hoursLeft}h {minutesLeft}m {secondsLeft}s
       </div>
       <div className="self-center">Year: {totalCycles}</div>

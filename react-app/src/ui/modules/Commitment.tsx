@@ -17,13 +17,21 @@ export const Commitment = () => {
   const {
     setup: {
       clientComponents: { Position, Squad },
+      systemCalls: { spawn_new_units },
       client,
     },
     account: { account },
   } = useDojo();
 
-  const { totalCycles, currentStage, isCommitStage, isResolveStage } =
-    useGameState();
+  const {
+    totalCycles,
+    currentStage,
+    isCommitStage,
+    isRevealStage,
+    isSpawnCycle,
+  } = useGameState();
+
+  const { gameId } = useQueryParams();
 
   const { move, setMove, setMoveByDay, moves, moveToHex } = useStateStore();
 
@@ -140,7 +148,7 @@ export const Commitment = () => {
         </Button>
       </div>
       <CommitmentMoves />
-      {(isCommitStage || isResolveStage) && (
+      {(isCommitStage || isRevealStage) && (
         <Button
           onClick={() =>
             client.move.move_squad_multi({
@@ -151,6 +159,11 @@ export const Commitment = () => {
           className="w-full"
         >
           {isCommitStage ? "Commit all" : "Reveal all"} moves
+        </Button>
+      )}
+      {isSpawnCycle && (
+        <Button onClick={() => spawn_new_units({ account, game_id: gameId })}>
+          spawn units
         </Button>
       )}
     </div>
@@ -184,7 +197,7 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
   const { clearByDayUUID, setMoveByDay } = useStateStore();
 
   const { gameId } = useQueryParams();
-  const { totalCycles } = useGameState();
+  const { totalCycles, isCommitStage } = useGameState();
 
   const squad = useComponentValue(
     Position,
@@ -210,36 +223,39 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
           </span>
         </span>
       </div>
+      {isCommitStage && (
+        <>
+          <Button
+            size={"sm"}
+            className="text-xs ml-auto"
+            disabled={move.committed}
+            onClick={() => {
+              try {
+                client.move.move_squad_commitment({
+                  account: account.account,
+                  game_id: gameId,
+                  squad_id: move.squadId,
+                  hash: BigInt(move.hash),
+                });
+              } catch (e) {
+                console.log(e);
+              }
 
-      <Button
-        size={"sm"}
-        className="text-xs ml-auto"
-        disabled={move.committed}
-        onClick={() => {
-          try {
-            client.move.move_squad_commitment({
-              account: account.account,
-              game_id: gameId,
-              squad_id: move.squadId,
-              hash: BigInt(move.hash),
-            });
-          } catch (e) {
-            console.log(e);
-          }
-
-          setMoveByDay(totalCycles, { ...move });
-        }}
-      >
-        {move.committed ? "Committed" : "Commit"}
-      </Button>
-      <Button
-        size={"sm"}
-        className="text-xs"
-        variant={"destructive"}
-        onClick={() => clearByDayUUID(totalCycles, move.uuid)}
-      >
-        x
-      </Button>
+              setMoveByDay(totalCycles, { ...move });
+            }}
+          >
+            {move.committed ? "Committed" : "Commit"}
+          </Button>
+          <Button
+            size={"sm"}
+            className="text-xs"
+            variant={"destructive"}
+            onClick={() => clearByDayUUID(totalCycles, move.uuid)}
+          >
+            x
+          </Button>
+        </>
+      )}
     </div>
   );
 };

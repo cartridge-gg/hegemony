@@ -239,7 +239,9 @@ mod tests {
 
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y)
+            );
 
         // shift time by 8hrs so the reveal can happen
         set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
@@ -281,27 +283,33 @@ mod tests {
         let x: u32 = 12;
         let y: u32 = 12;
 
+        let new_squad_id = SQUAD_ID + 6;
+
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE - 1, x, y));
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID, new_squad_id, hash_move(STARTING_SQUAD_SIZE - 1, x, y)
+            );
 
         assert(
-            get!(world, (GAME_ID, east.col, east.row), PositionSquadCount).count == 1,
-            'should be one squad'
+            get!(world, (GAME_ID, east.col, east.row), PositionSquadCount).count == 2,
+            'should be two squads'
         );
 
         // shift time by 8hrs so the reveal can happen
         set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
 
-        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE - 1, x, y);
+        systems.move_system.move_squad_reveal(GAME_ID, new_squad_id, STARTING_SQUAD_SIZE - 1, x, y);
 
         // check position has been updated
-        let position = get!(world, (GAME_ID, PLAYER_ONE_ADDRESS(), SQUAD_ID), Position);
+        let position = get!(world, (GAME_ID, PLAYER_ONE_ADDRESS(), new_squad_id), Position);
         assert(position.x == x, 'x should be equal');
         assert(position.y == y, 'y should be equal');
+
         assert(
             get!(world, (GAME_ID, east.col, east.row, squad_id), PositionSquadEntityIdByIndex)
-                .squad__id == 0,
+                .squad__id
+                .into() == 1,
             'should be empty'
         );
         assert(
@@ -322,12 +330,16 @@ mod tests {
 
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y)
+            );
 
         starknet::testing::set_contract_address(PLAYER_TWO_ADDRESS());
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y)
+            );
 
         // shift time by 8hrs so the reveal can happen
         set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
@@ -375,7 +387,7 @@ mod tests {
         systems
             .move_system
             .move_squad_commitment(
-                GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, CENTER_X, CENTER_Y)
+                GAME_ID, SQUAD_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, CENTER_X, CENTER_Y)
             );
 
         // shift time by 8hrs so the reveal can happen
@@ -416,17 +428,21 @@ mod tests {
 
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y)
+            );
 
         starknet::testing::set_contract_address(PLAYER_TWO_ADDRESS());
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE - 1, x, y));
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID, SQUAD_ID + 6, hash_move(STARTING_SQUAD_SIZE - 1, x, y)
+            );
 
         // shift time by 8hrs so the reveal can happen
         set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS + 1);
 
-        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE - 1, x, y);
+        systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID + 6, STARTING_SQUAD_SIZE - 1, x, y);
 
         starknet::testing::set_contract_address(PLAYER_ONE_ADDRESS());
         systems.move_system.move_squad_reveal(GAME_ID, SQUAD_ID, STARTING_SQUAD_SIZE, x, y);
@@ -464,7 +480,9 @@ mod tests {
 
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y));
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID, SQUAD_ID, hash_move(STARTING_SQUAD_SIZE, x, y)
+            );
 
         assert(
             get!(world, (GAME_ID, east.col, east.row), PositionSquadCount).count == 1,
@@ -480,7 +498,9 @@ mod tests {
 
         systems
             .move_system
-            .move_squad_commitment(GAME_ID, SQUAD_ID + 1, hash_move(STARTING_SQUAD_SIZE, x, y));
+            .move_squad_commitment(
+                GAME_ID, SQUAD_ID + 1, SQUAD_ID + 1, hash_move(STARTING_SQUAD_SIZE, x, y)
+            );
 
         set_block_timestamp(60 * 60 * COMMIT_TIME_HOURS * 4 + 1);
 

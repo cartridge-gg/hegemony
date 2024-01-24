@@ -8,10 +8,12 @@ export const SquadOnHex = ({
   position,
   entity,
   commitmentMove,
+  depth,
 }: {
   position: any;
   entity: Entity;
   commitmentMove?: Move;
+  depth?: number;
 }) => {
   const {
     setup: {
@@ -24,7 +26,7 @@ export const SquadOnHex = ({
   return (
     <Troop
       text={`id: ${squadOnHex?.squad_id}  qty: ${squadOnHex?.unit_qty}`}
-      position={[position[0], position[1], 1]}
+      position={[position[0], position[1], depth]}
     />
   );
 };

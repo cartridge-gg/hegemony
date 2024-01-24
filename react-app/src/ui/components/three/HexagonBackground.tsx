@@ -7,7 +7,7 @@ import { Has, HasValue } from "@dojoengine/recs";
 import { useStateStore } from "@/hooks/useStateStore";
 import { useDojo } from "@/dojo/useDojo";
 import { Troop } from "./Troop";
-import { offset } from "@/utils";
+import { isEnergySource, offset } from "@/utils";
 import { SquadOnHex } from "./SquadOnHex";
 import { snoise } from "@dojoengine/utils";
 import { useGameState } from "@/hooks/useGameState";
@@ -30,9 +30,12 @@ const createHexagonGeometry = (radius: number, depth: number) => {
 
   // Extrude settings
   const extrudeSettings = {
-    steps: 1,
-    depth: depth,
-    bevelEnabled: false,
+    steps: 2,
+    depth,
+    bevelEnabled: true,
+    bevelThickness: 0.1,
+    bevelSize: 0.1,
+    bevelSegments: 1,
   };
 
   // Create a geometry by extruding the shape
@@ -69,6 +72,7 @@ export const HexagonBackground = ({
   const [backgroundColor, setBackgroundColor] = useState("white");
   const [linePosition, setLinePosition] = useState(position);
   const [radiusPosition, setRadiusPosition] = useState(radius);
+  const [depth, setDepth] = useState(1);
 
   // Squads on hex
   const squadsOnHex = useEntityQuery([
@@ -88,11 +92,6 @@ export const HexagonBackground = ({
   }, [selectedHex, moveToHex, moves]);
 
   const commitmentMove = findSquadByCoordinates(totalCycles, col, row);
-
-  const hexagonGeometry = useMemo(
-    () => createHexagonGeometry(radiusPosition, 1),
-    [radius, radiusPosition]
-  );
 
   const handleLeftClick = () => {
     setSelectedHex({ col, row, qty: 3 });
@@ -120,30 +119,55 @@ export const HexagonBackground = ({
 
     // Determine background color based on different conditions
     let backgroundColor = "white";
+    let depth = 1;
     if (isMoveToHex) {
       backgroundColor = "red";
+      // depth = 1;
     } else if (seed > 60) {
       backgroundColor = "blue";
+      depth = 0.4;
     } else if (seed > 40) {
-      backgroundColor = "yellow";
+      backgroundColor = "#4F9153";
+      depth = 0.7;
     } else if (seed > 30) {
-      backgroundColor = "brown";
+      backgroundColor = "#002D04";
+      depth = 1.4;
     } else if (seed > 20) {
-      backgroundColor = "purple";
+      backgroundColor = "#2c4c3b";
+      depth = 1.6;
     } else if (seed > 15) {
       backgroundColor = "gray";
+      depth = 2;
     } else {
       backgroundColor = "black";
+      depth = 3;
     }
-
+    setDepth(depth);
     setBackgroundColor(backgroundColor);
-  }, [selectedHex, moves, isMoveToHex, seed]);
+  }, [selectedHex, moves, isMoveToHex, seed, isSelected, col, row]);
+
+  const isBase = isEnergySource({ x: col + offset, y: row + offset });
+
+  const hexagonGeometry = useMemo(
+    () => createHexagonGeometry(radiusPosition, depth),
+    [radiusPosition, depth]
+  );
 
   return (
     <>
+      {isBase && (
+        <mesh
+          rotation={[Math.PI / 2, 0, 0]}
+          position={[position[0], position[1], 1]}
+        >
+          <Cone>
+            <meshStandardMaterial color="black" />
+          </Cone>
+        </mesh>
+      )}
       {commitmentMove && (
         <Troop
-          position={[position[0], position[1], 1]}
+          position={[position[0], position[1], depth]}
           text={`id: ${commitmentMove.squadId} qty: ${commitmentMove.qty}`}
         />
       )}
@@ -154,13 +178,14 @@ export const HexagonBackground = ({
             key={index}
             position={position}
             entity={a}
+            depth={depth}
           />
         ))}
 
       {baseOnHex?.length > 0 && (
         <mesh
           rotation={[Math.PI / 2, 0, 0]}
-          position={[position[0], position[1], 1.5]}
+          position={[position[0], position[1], 1]}
         >
           <Cone>
             <meshStandardMaterial color="red" />
@@ -168,7 +193,7 @@ export const HexagonBackground = ({
         </mesh>
       )}
 
-      <mesh position={[position[0] - 2, position[1] - 1, 1]}>
+      <mesh position={[position[0] - 2, position[1] - 1, depth + 0.2]}>
         <Text fontSize={0.4} color="white" anchorX="center" anchorY="middle">
           {col},{row}
         </Text>
@@ -191,7 +216,7 @@ export const HexagonBackground = ({
       >
         <meshStandardMaterial color={backgroundColor} />
       </mesh>
-      <lineSegments
+      {/* <lineSegments
         geometry={new THREE.EdgesGeometry(hexagonGeometry)}
         material={
           new THREE.LineBasicMaterial({
@@ -200,7 +225,7 @@ export const HexagonBackground = ({
           })
         }
         position={linePosition}
-      />
+      /> */}
     </>
   );
 };

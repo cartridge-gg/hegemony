@@ -1,6 +1,8 @@
 #[starknet::interface]
 trait IMove<TContractState> {
-    fn move_squad_commitment(self: @TContractState, game_id: u32, squad_id: u32, hash: felt252);
+    fn move_squad_commitment(
+        self: @TContractState, game_id: u32, squad_id: u32, new_squad_id: u32, hash: felt252
+    );
     fn move_squad_reveal(
         self: @TContractState, game_id: u32, squad_id: u32, unit_qty: u32, x: u32, y: u32
     );
@@ -32,27 +34,58 @@ mod move {
 
     #[external(v0)]
     impl MoveImpl of IMove<ContractState> {
-        fn move_squad_commitment(self: @ContractState, game_id: u32, squad_id: u32, hash: felt252) {
+        fn move_squad_commitment(
+            self: @ContractState, game_id: u32, squad_id: u32, new_squad_id: u32, hash: felt252
+        ) {
             let world = self.world();
 
             get!(world, (game_id, GAME_ID_CONFIG), Game).assert_commit_stage();
 
-            // check squad is owned by caller
-            // TODO: squad checks
             let player = get_caller_address();
 
-            let squad_commitment_hash = SquadCommitmentHash { game_id, player, squad_id, hash };
+            // if new squad id is different from current squad id
+            // we spawn a new squad on the current location and then set the hash for the new squad
+            if (squad_id != new_squad_id) {
+                // spawn new squad at current squad location with 0 units
+                let current_squad_position = get!(
+                    world, (game_id, get_caller_address(), squad_id), Position
+                );
 
-            set!(world, (squad_commitment_hash));
+                let mut player_squad_count = get!(world, (game_id, player), PlayerSquadCount);
+                player_squad_count.count += 1;
+
+                // check here otherwise squad ids can increment too much
+                assert(player_squad_count.count == new_squad_id, 'Too many squads');
+
+                spawn::spawn_squad(
+                    world,
+                    player,
+                    game_id,
+                    IHexTile::new(current_squad_position.x, current_squad_position.y),
+                    player_squad_count.count,
+                    0
+                );
+
+                set!(
+                    world,
+                    (
+                        player_squad_count,
+                        SquadCommitmentHash { game_id, player, squad_id: new_squad_id, hash }
+                    )
+                );
+            } else {
+                set!(world, (SquadCommitmentHash { game_id, player, squad_id, hash }));
+            }
         }
 
         fn move_squad_reveal(
             self: @ContractState, game_id: u32, squad_id: u32, unit_qty: u32, x: u32, y: u32
         ) {
             let world = self.world();
-            let player = get_caller_address();
-
             get!(world, (game_id, GAME_ID_CONFIG), Game).assert_reveal_stage();
+
+            // player
+            let player = get_caller_address();
 
             // current position and squad
             let (mut squad_current_position, mut squad) = get!(
@@ -65,107 +98,71 @@ mod move {
             );
 
             // assert
-            assert(unit_qty <= squad.unit_qty, 'Too many units to move');
+            // Add back soon
+            // assert(unit_qty <= squad.unit_qty, 'Too many units to move');
 
             // check hash
             check_hash(world, game_id, player, squad_id, unit_qty, x, y);
 
-            let mut player_squad_count = get!(world, (game_id, player), PlayerSquadCount);
-            player_squad_count.count += 1;
+            // TODO: check distance is max 3 hexes
 
             let players_squads_on_position = get_player_squads_on_position(
                 get_squads_on_position(world, game_id, x, y).span(), player
             );
 
-            // TODO: ABSTRACT THIS - this is nasty
+            //----------  
+
+            // TODO: check for incorrect squad amounts, otherwise people can spawn huge squads
+            // if squad qty = 0 it means it was just created
+            // we then check if the first squad on the current positions qty
+            // then we subtract the qty from the current position squad and it must be greater than 0
+
+            //----------------
+
+            // @dev: Merge or move
             if (players_squads_on_position.len() > 0) {
                 let mut merged_squad = merge_player_squads(
                     players_squads_on_position.span(), player
                 );
 
+                // merge squads
                 merged_squad.unit_qty += unit_qty;
                 merged_squad.game_id = game_id;
                 merged_squad.player = player;
-
                 set!(world, (merged_squad));
-
-                if (unit_qty < squad.unit_qty) {
-                    squad.unit_qty -= unit_qty;
-                    spawn::spawn_squad(
-                        world,
-                        player,
-                        game_id,
-                        IHexTile::new(squad_current_position.x, squad_current_position.y),
-                        player_squad_count.count,
-                        unit_qty
-                    );
-                }
             } else {
-                if (unit_qty < squad.unit_qty) {
-                    // @dev Splitting the squads. We spawn a new squad at the location of movement with the existing squad id. And we spawn a new squad at the current location with a new id. 
+                let mut move_to_position_count = get!(world, (game_id, x, y), PositionSquadCount);
+                move_to_position_count.count += 1;
 
-                    // spawn new squad moving to new position
-                    spawn::spawn_squad(
-                        world, player, game_id, IHexTile::new(x, y), squad_id, unit_qty
-                    );
+                // position
+                let position = Position { game_id, player, squad_id, x, y };
 
-                    // subtract unit qty from current squad
-                    squad.unit_qty -= unit_qty;
+                // set squad position index
+                let position_squad_entity_id_by_index = PositionSquadEntityIdByIndex {
+                    game_id,
+                    x,
+                    y,
+                    squad_position_index: move_to_position_count.count,
+                    squad__game_id: game_id,
+                    squad__player_id: player,
+                    squad__id: squad_id
+                };
 
-                    // spawn new squad on current position
-                    spawn::spawn_squad(
-                        world,
-                        player,
-                        game_id,
-                        IHexTile::new(squad_current_position.x, squad_current_position.y),
-                        player_squad_count.count,
-                        unit_qty
-                    );
+                set!(world, (move_to_position_count, position, position_squad_entity_id_by_index));
 
-                    // assert
-                    assert(squad.unit_qty >= 0, 'Squad unit not enough');
-
-                    // if no troops left 0 out the position count
-                    if (squad.unit_qty == 0) {
-                        if (x != squad_current_position.x && y != squad_current_position.y) {
-                            current_position_squad_count.count -= 1;
-                        }
-                    }
-                } else {
-                    // increment squad count on new hex
-                    let mut move_to_position_count = get!(
-                        world, (game_id, x, y), PositionSquadCount
-                    );
-                    move_to_position_count.count += 1;
-
-                    set!(
-                        world,
-                        (
-                            move_to_position_count,
-                            Position { game_id, player, squad_id, x, y },
-                            PositionSquadEntityIdByIndex {
-                                game_id,
-                                x,
-                                y,
-                                squad_position_index: move_to_position_count.count,
-                                squad__game_id: game_id,
-                                squad__player_id: player,
-                                squad__id: squad_id
-                            }
-                        )
-                    );
-
-                    if (x != squad_current_position.x && y != squad_current_position.y) {
-                        current_position_squad_count.count -= 1;
-                    }
+                // remove squad count from current position
+                if (x != squad_current_position.x && y != squad_current_position.y) {
+                    current_position_squad_count.count -= 1;
                 }
             }
 
-            // split squad
-
+            // delete squad from hex
             delete_squad_from_position(world, squad_current_position, game_id, squad_id, player);
-            set!(world, (current_position_squad_count, squad, player_squad_count));
 
+            // set values
+            set!(world, (current_position_squad_count, squad));
+
+            // capture energy source
             if (is_energy_source(x, y)) {
                 capture_energy_source(world, game_id, x, y, player);
             }

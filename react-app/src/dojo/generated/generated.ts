@@ -2,6 +2,7 @@
 
 import { Account, Call } from "starknet";
 import { DojoProvider } from "@dojoengine/core";
+import { CreateGame, SpawnPlayer } from "./interfaces";
 
 export type IWorld = Awaited<ReturnType<typeof setupWorld>>;
 
@@ -44,13 +45,7 @@ export async function setupWorld(provider: DojoProvider) {
       reveal_length,
       resolve_length,
       cycle_unit,
-    }: {
-      account: Account;
-      commit_length: number;
-      reveal_length: number;
-      resolve_length: number;
-      cycle_unit: number;
-    }) => {
+    }: CreateGame) => {
       try {
         return await provider.execute(account, contract_name, "create_game", [
           commit_length,
@@ -104,11 +99,13 @@ export async function setupWorld(provider: DojoProvider) {
       account,
       game_id,
       squad_id,
+      new_squad_id,
       hash,
     }: {
       account: Account;
       game_id: number;
       squad_id: number;
+      new_squad_id: number;
       hash: bigint;
     }) => {
       try {
@@ -116,7 +113,7 @@ export async function setupWorld(provider: DojoProvider) {
           account,
           contract_name,
           "move_squad_commitment",
-          [game_id, squad_id, hash]
+          [game_id, squad_id, new_squad_id, hash]
         );
       } catch (error) {
         console.error("Error executing spawn:", error);
@@ -173,13 +170,7 @@ export async function setupWorld(provider: DojoProvider) {
   function spawn() {
     const contract_name = "spawn";
 
-    const spawn_player = async ({
-      account,
-      game_id,
-    }: {
-      account: Account;
-      game_id: number;
-    }) => {
+    const spawn_player = async ({ account, game_id }: SpawnPlayer) => {
       try {
         return await provider.execute(account, contract_name, "spawn_player", [
           game_id,

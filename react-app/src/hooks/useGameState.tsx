@@ -2,77 +2,45 @@ import { useDojo } from "@/dojo/useDojo";
 import { useComponentValue } from "@dojoengine/react";
 import { Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEffect, useMemo, useState } from "react";
-import { RpcProvider, num } from "starknet";
+import { useEffect, useState } from "react";
 import { useQueryParams } from "./useQueryParams";
+
+const GAME_ID_CONFIG = 2096807177358152958712390915352935n;
+const STAGES = ["Commit", "Reveal", "Resolve"];
+const STAGE_COLOURS = ["bg-blue-500", "bg-green-500", "bg-red-200"];
+const CYCLE_UNITS = 8;
+const SECONDS_IN_DAY = 86400;
+const SECONDS_IN_HOUR = 3600;
+const SECONDS_IN_MINUTE = 60;
 
 export const useGameState = () => {
   const {
     setup: {
-      clientComponents: { Squad, Game },
+      clientComponents: { Game },
     },
     account,
   } = useDojo();
-
   const { gameId } = useQueryParams();
 
-  const gameIdConfig = 2096807177358152958712390915352935n;
+  const entityId = calculateEntityId(gameId);
+  const game = useComponentValue(Game, entityId); // Replace GameType with the actual type of 'Game'
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
 
-  const entityId = getEntityIdFromKeys([
-    BigInt(gameId),
-    BigInt(gameIdConfig),
-  ]) as Entity;
+  useEffect(() => setupTimer(game, setElapsedTime), []);
 
-  const game = useComponentValue(Game, entityId);
+  const { totalDays, totalHours, currentStageIndex, totalCycles } =
+    calculateGameProgress(game, elapsedTime);
 
-  const [elapsedTime, setElapsedTime] = useState(0);
-
-  const stages = ["Commit", "Reveal", "Resolve"];
-
-  const stageColours = ["bg-blue-500", "bg-green-500", "bg-red-200"];
-
-  useEffect(() => {
-    // Update the elapsed time every second
-    const interval = setInterval(() => {
-      const currentTime = Math.floor(Date.now() / 1000);
-      const timeElapsedInSeconds = currentTime - (game?.start_time || 0);
-      setElapsedTime(timeElapsedInSeconds);
-    }, 1000);
-
-    // Clear the interval on component unmount
-    return () => clearInterval(interval);
-  }, []);
-
-  const totalDays = Math.floor(elapsedTime / 86400);
-  const totalHours = Math.floor(elapsedTime / 3600);
-
-  const totalCycleUnits = Math.floor(elapsedTime / game?.cycle_unit);
-  const currentStageIndex = Math.floor(totalCycleUnits / 8) % stages.length;
-  const currentStage = stages[currentStageIndex];
-
-  const totalCycles = Math.floor(
-    totalCycleUnits /
-      (game?.commit_length, game?.reveal_length, game?.resolve_length)
+  const { hoursLeft, minutesLeft, secondsLeft } = calculateTimeLeftInStage(
+    game,
+    elapsedTime
   );
-
-  const currentStageColour = stageColours[currentStageIndex];
-
-  const secondsLeftInStage =
-    8 * game?.cycle_unit - (elapsedTime % (8 * game?.cycle_unit));
-
-  const hoursLeft = Math.floor(secondsLeftInStage / 3600);
-  const minutesLeft = Math.floor((secondsLeftInStage % 3600) / 60);
-  const secondsLeft = secondsLeftInStage % 60;
-
-  const isCommitStage = currentStage === "Commit";
-  const isRevealStage = currentStage === "Reveal";
-  const isResolveStage = currentStage === "Resolve";
 
   return {
     account,
     game,
-    currentStage,
-    currentStageColour,
+    currentStage: STAGES[currentStageIndex],
+    currentStageColour: STAGE_COLOURS[currentStageIndex],
     hoursLeft,
     minutesLeft,
     secondsLeft,
@@ -81,8 +49,53 @@ export const useGameState = () => {
     elapsedTime,
     entityId,
     totalCycles,
-    isCommitStage,
-    isRevealStage,
-    isResolveStage,
+    isCommitStage: currentStageIndex === 0,
+    isRevealStage: currentStageIndex === 1,
+    isResolveStage: currentStageIndex === 2,
+    isSpawnCycle: totalCycles % 2 === 0,
   };
+};
+
+const calculateEntityId = (gameId: number): Entity => {
+  return getEntityIdFromKeys([BigInt(gameId), GAME_ID_CONFIG]) as Entity;
+};
+
+const setupTimer = (
+  game: any,
+  setElapsedTime: (time: number) => void
+): (() => void) => {
+  const interval = setInterval(() => {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const timeElapsedInSeconds = currentTime - (game?.start_time || 0);
+    setElapsedTime(timeElapsedInSeconds);
+  }, 1000);
+
+  return () => clearInterval(interval);
+};
+
+const calculateGameProgress = (game: any, elapsedTime: number) => {
+  const totalDays = Math.floor(elapsedTime / SECONDS_IN_DAY);
+  const totalHours = Math.floor(elapsedTime / SECONDS_IN_HOUR);
+  const totalCycleUnits = Math.floor(elapsedTime / game?.cycle_unit);
+  const currentStageIndex =
+    Math.floor(totalCycleUnits / CYCLE_UNITS) % STAGES.length;
+  const totalCycles = Math.floor(
+    totalCycleUnits /
+      (game?.commit_length + game?.reveal_length + game?.resolve_length)
+  );
+
+  return { totalDays, totalHours, currentStageIndex, totalCycles };
+};
+
+const calculateTimeLeftInStage = (game: any, elapsedTime: number) => {
+  const secondsLeftInStage =
+    CYCLE_UNITS * game?.cycle_unit -
+    (elapsedTime % (CYCLE_UNITS * game?.cycle_unit));
+  const hoursLeft = Math.floor(secondsLeftInStage / SECONDS_IN_HOUR);
+  const minutesLeft = Math.floor(
+    (secondsLeftInStage % SECONDS_IN_HOUR) / SECONDS_IN_MINUTE
+  );
+  const secondsLeft = secondsLeftInStage % SECONDS_IN_MINUTE;
+
+  return { hoursLeft, minutesLeft, secondsLeft };
 };
