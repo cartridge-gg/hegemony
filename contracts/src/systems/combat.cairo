@@ -14,7 +14,10 @@ mod combat {
         game::{GameCount, GAME_ID_CONFIG, Game, GameStatus, GameTrait}
     };
 
+    use hegemony::systems::{move::move};
+
     use alexandria_data_structures::array_ext::{ArrayTraitExt, SpanTraitExt};
+
 
     #[external(v0)]
     impl CombatImpl of ICombat<ContractState> {
@@ -24,33 +27,7 @@ mod combat {
 
             get!(world, (game_id, GAME_ID_CONFIG), Game).assert_resolve_stage();
 
-            let caller = get_caller_address();
-
-            let position_squad_count = get!(world, (game_id, x, y), PositionSquadCount).count;
-
-            let mut squads = ArrayTrait::<Squad>::new();
-            let mut index: usize = 1;
-
-            let mut num_squads: usize = 0;
-
-            loop {
-                if (num_squads > position_squad_count.into()) {
-                    break;
-                }
-
-                let squad_id = get!(world, (game_id, x, y, index), PositionSquadEntityIdByIndex);
-
-                if (squad_id.squad_entity_id != 0) {
-                    let mut squad = get!(world, (squad_id.squad_entity_id), Squad);
-
-                    squads.append(squad);
-
-                    // only count if not empty // should be fixed later
-                    num_squads += 1;
-                }
-
-                index += 1;
-            };
+            let squads = move::get_squads_on_position(world, game_id, x, y);
 
             if (squads.len() > 1) {
                 let mut squad_one = *squads.at(0);
@@ -59,19 +36,25 @@ mod combat {
                 if (*squads.at(0).unit_qty == *squads.at(1).unit_qty) {
                     squad_one.unit_qty = 0;
                     squad_two.unit_qty = 0;
-                    set!(world, (squad_one, squad_two));
+
+                    let position_count = PositionSquadCount { game_id, x, y, count: 0 };
+                    set!(world, (squad_one, squad_two, position_count));
                 // squad one wins
                 } else if (*squads.at(0).unit_qty >= *squads.at(1).unit_qty) {
                     squad_one.unit_qty -= *squads.at(1).unit_qty;
 
                     squad_two.unit_qty = 0;
-                    set!(world, (squad_one, squad_two));
+
+                    let position_count = PositionSquadCount { game_id, x, y, count: 1 };
+                    set!(world, (squad_one, squad_two, position_count));
                 // squad two wins
                 } else {
                     squad_one.unit_qty = 0;
 
                     squad_two.unit_qty -= *squads.at(0).unit_qty;
-                    set!(world, (squad_one, squad_two));
+
+                    let position_count = PositionSquadCount { game_id, x, y, count: 1 };
+                    set!(world, (squad_one, squad_two, position_count));
                 }
             }
         }

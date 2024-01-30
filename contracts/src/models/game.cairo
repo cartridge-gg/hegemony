@@ -7,6 +7,33 @@ const COMMIT_TIME_HOURS: u64 = 8;
 const REVEAL_TIME_HOURS: u64 = 8;
 const RESOLVE_TIME_HOURS: u64 = 8;
 
+const ONE_HOUR: u64 = 3600;
+const ONE_MINUTE: u64 = 60;
+const SIX_MINUTES: u64 = 360;
+
+const SPAWN_CYCLE: u64 = 2;
+
+
+// Games are based on cycle units
+// Each cycle is a cycle_unit which is a unix time lenght, could be 1 minute or 1 year.
+// the cycle unit is divided into 3 stages: commit, reveal, resolve
+
+// example
+// cycle_unit = 1 minute
+// commit_length = 20
+// reveal_length = 20
+// resolve_length = 20
+
+// this means that each cycle is 60 minutes long
+
+#[derive(Copy, Drop, Serde)]
+struct GameConfig {
+    commit_length: u64,
+    reveal_length: u64,
+    resolve_length: u64,
+    cycle_unit: u64
+}
+
 #[derive(Model, Copy, Drop, Serde)]
 struct Game {
     #[key]
@@ -16,22 +43,36 @@ struct Game {
     players: u32,
     status: GameStatus,
     start_time: u64,
+    commit_length: u64,
+    reveal_length: u64,
+    resolve_length: u64,
+    cycle_unit: u64
 }
 
 #[generate_trait]
 impl GameImpl of GameTrait {
+    fn total_cycle_length(self: Game) -> u64 {
+        self.commit_length + self.reveal_length + self.resolve_length
+    }
     fn get_turn_stage(self: Game) -> TurnStage {
-        let hours_since_start = (get_block_timestamp() - self.start_time) / (60 * 60);
+        let cycle_units_since_start = (get_block_timestamp() - self.start_time) / self.cycle_unit;
 
-        let stage = hours_since_start % 24;
+        let stage = cycle_units_since_start % self.total_cycle_length();
 
-        if stage < COMMIT_TIME_HOURS {
+        if stage < self.commit_length {
             TurnStage::Commit
-        } else if stage < (COMMIT_TIME_HOURS + REVEAL_TIME_HOURS) {
+        } else if stage < (self.commit_length + self.reveal_length) {
             TurnStage::Reveal
         } else {
             TurnStage::Resolve
         }
+    }
+    // returns the number of the current cycle
+    fn get_cycle_number(self: Game) -> u64 {
+        ((get_block_timestamp() - self.start_time) / (self.cycle_unit) / self.total_cycle_length())
+    }
+    fn assert_is_spawn_cycle(self: Game) {
+        assert(self.get_cycle_number() % SPAWN_CYCLE == 0, 'Not in spawn cycle');
     }
     fn assert_commit_stage(self: Game) {
         self.assert_in_progress();

@@ -6,7 +6,13 @@ export RPC_URL="http://localhost:5050";
 
 export WORLD_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.world.address')
 
-export ACTIONS_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "actions" ).address')
+export COMBAT_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "hegemony::systems::combat::combat" ).address')
+
+export GAME_LOBBY_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "hegemony::systems::game_lobby::game_lobby" ).address')
+
+export SPAWN_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "hegemony::systems::spawn::spawn" ).address')
+
+export MOVE_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "hegemony::systems::moves::moves" ).address')
 
 echo "---------------------------------------------------------------------------"
 echo world : $WORLD_ADDRESS 
