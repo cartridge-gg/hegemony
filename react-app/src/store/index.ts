@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 
 export interface Move {
   squadId: number;
+  newSquadId?: number;
   x: number;
   y: number;
   qty: number;

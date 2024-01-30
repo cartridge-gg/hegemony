@@ -15,7 +15,7 @@ Strategic Hex game of world domination.
 - If a players home base has been held for more than 2 turns, the player is destroyed - their troops remain until they are destroyed.
 - Combat resolution is based on most units
 
-### Game Loop
+## Game Loop
 
 The game revolves around three stages per turn.
 
@@ -39,9 +39,13 @@ curl -L https://install.dojoengine.org | bash
 
 Run Katana:
 
+### Terminal 1
+
 ```sh
 katana --disable-fee
 ```
+
+### Terminal 2
 
 Build + Migrate world:
 
@@ -51,18 +55,12 @@ sozo build
 sozo migrate
 ```
 
-Run Torii:
+### Terminal 3
 
 ```sh
-# TEMP RUN KARIY FORK
-cargo install --git https://github.com/kariy/dojo torii-server --rev c7d48d2 --force
-torii -- --world 0x1ced4b9d69e6fe907fea23bea7e27b287ad3589c62659ccc0d78d435ba906f5
-# torii --world 0x1ced4b9d69e6fe907fea23bea7e27b287ad3589c62659ccc0d78d435ba906f5
-```
+cd react-app
 
-Run Client:
+pnpm i
 
-```sh
-cd client
-cargo run
+pnpm run dev
 ```

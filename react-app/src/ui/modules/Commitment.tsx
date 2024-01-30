@@ -30,31 +30,32 @@ export const Commitment = () => {
     isRevealStage,
     isSpawnCycle,
   } = useGameState();
-
   const { gameId } = useQueryParams();
-
   const { move, setMove, setMoveByDay, moves, moveToHex } = useStateStore();
-
   const { movesCommitArray, moveRevealArray } = useCommitTransaction();
 
   const handleInputChange = (e: any) => {
     const { name, value } = e.target;
-    setMove({ ...move, [name]: value });
+
+    if (name == "qty" && value != 3) {
+      setMove({ ...move, [name]: value, newSquadId: 7 });
+    } else {
+      setMove({ ...move, [name]: value });
+    }
   };
 
   useEffect(() => {
-    if (move.x && move.y) {
+    if (move.x && move.y && move.qty) {
       const hash = getCommitmentHash([
         BigInt(move.qty),
         BigInt(move.x + offset),
         BigInt(move.y + offset),
       ]);
 
-      console.log(BigInt(hash));
-      console.log(hash.toString());
+      console.log(hash);
       setMove({ ...move, hash: hash.toString() });
     }
-  }, [move.x, move.y]);
+  }, [move.x, move.y, move.qty]);
 
   const isSelected = useMoveStore((state) => state.selectedHex) || {
     col: 0,
@@ -208,11 +209,16 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
     ]) as Entity
   );
 
+  const { squadId, newSquadId, qty, committed } = move;
+
   return (
     <div className="flex text-xs border ">
       <div className="self-center flex">
-        <span className="px-1 border bg-black text-white"> {move.squadId}</span>
-        <span className="px-1 bg-red-200">x{move.qty}</span>
+        <span className="px-1 border bg-black text-white">
+          {" "}
+          {newSquadId ? newSquadId : squadId}
+        </span>
+        <span className="px-1 bg-red-200">x{qty}</span>
         <span className="px-1 bg-orange-200">
           from ({squad && squad?.x - offset}/{squad && squad?.y - offset})
         </span>
@@ -223,39 +229,40 @@ export const CommitmentMove = ({ move }: { move: Move }) => {
           </span>
         </span>
       </div>
-      {isCommitStage && (
-        <>
-          <Button
-            size={"sm"}
-            className="text-xs ml-auto"
-            disabled={move.committed}
-            onClick={() => {
-              try {
-                client.move.move_squad_commitment({
-                  account: account.account,
-                  game_id: gameId,
-                  squad_id: move.squadId,
-                  hash: BigInt(move.hash),
-                });
-              } catch (e) {
-                console.log(e);
-              }
+      {/* {isCommitStage && ( */}
+      <>
+        <Button
+          size={"sm"}
+          className="text-xs ml-auto"
+          disabled={committed}
+          onClick={() => {
+            try {
+              client.move.move_squad_commitment({
+                account: account.account,
+                game_id: gameId,
+                squad_id: move.squadId,
+                new_squad_id: newSquadId ? newSquadId : squadId,
+                hash: BigInt(move.hash),
+              });
+            } catch (e) {
+              console.log(e);
+            }
 
-              setMoveByDay(totalCycles, { ...move });
-            }}
-          >
-            {move.committed ? "Committed" : "Commit"}
-          </Button>
-          <Button
-            size={"sm"}
-            className="text-xs"
-            variant={"destructive"}
-            onClick={() => clearByDayUUID(totalCycles, move.uuid)}
-          >
-            x
-          </Button>
-        </>
-      )}
+            setMoveByDay(totalCycles, { ...move });
+          }}
+        >
+          {move.committed ? "Committed" : "Commit"}
+        </Button>
+        <Button
+          size={"sm"}
+          className="text-xs"
+          variant={"destructive"}
+          onClick={() => clearByDayUUID(totalCycles, move.uuid)}
+        >
+          x
+        </Button>
+      </>
+      {/* )} */}
     </div>
   );
 };
