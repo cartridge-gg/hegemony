@@ -33,24 +33,26 @@ export const useCommitTransaction = () => {
       setMoveByDay(totalCycles, updatedMove);
     });
 
-    return updatedMoves.map((move) => {
+    const movesMap = updatedMoves.map((move) => {
       return {
         entrypoint: "move_squad_reveal",
         contractAddress: getContractByName(manifest, "move"),
         calldata: [
           gameId,
-          move.squadId,
+          move.newSquadId ? move.newSquadId : move.squadId,
           move.qty,
           move.x + offset,
           move.y + offset,
         ],
       };
     });
+
+    console.log(movesMap);
+
+    return movesMap;
   };
 
   const movesCommitArray = (): Call[] => {
-    console.log(moves);
-    // Create a new array with updated items
     const updatedMoves = moves.map((move) => ({
       ...move,
       committed: true,
@@ -58,24 +60,24 @@ export const useCommitTransaction = () => {
 
     console.log(updatedMoves);
 
-    // Update the state with the new array
     updatedMoves.forEach((updatedMove) => {
       setMoveByDay(totalCycles, updatedMove);
     });
 
-    console.log(
-      updatedMoves.map((move) => ({
-        entrypoint: "move_squad_commitment",
-        contractAddress: getContractByName(manifest, "move"),
-        calldata: [gameId, move.squadId, num.toBigInt(move.hash)],
-      }))
-    );
-
-    return updatedMoves.map((move) => ({
+    const movesMap = updatedMoves.map((move) => ({
       entrypoint: "move_squad_commitment",
       contractAddress: getContractByName(manifest, "move"),
-      calldata: [gameId, move.squadId, num.toBigInt(move.hash)],
+      calldata: [
+        gameId,
+        move.squadId,
+        move.newSquadId ? move.newSquadId : move.squadId,
+        num.toBigInt(move.hash),
+      ],
     }));
+
+    console.log(movesMap);
+
+    return movesMap;
   };
 
   return {

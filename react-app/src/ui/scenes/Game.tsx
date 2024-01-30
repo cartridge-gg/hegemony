@@ -5,6 +5,7 @@ import {
   MapControls,
   Bounds,
   Environment,
+  Stage,
 } from "@react-three/drei";
 import { HexagonBackground } from "../components/three/HexagonBackground";
 import { MovementArrows } from "../components/three/Arrows";
@@ -41,32 +42,41 @@ const HexagonGrid = ({ rows, cols, hexRadius }: any) => {
 
 export const Game = () => {
   return (
-    <Canvas shadows color={"black"}>
+    <Canvas>
       <color attach="background" args={["#ADD8E6"]} />
-      <mesh>
-        <PerspectiveCamera
-          makeDefault
-          position={[25, 270, 270]}
-          zoom={2}
-          aspect={1.77}
-          near={3}
-          far={3}
-        />
-        <MapControls enableRotate={false} makeDefault target={[0, 0, 0]} />
-        <ambientLight color={"white"} intensity={1} />
-        <pointLight
-          rotation={[Math.PI / -2, 0, 0]}
-          position={[10, 20, 10]}
-          intensity={20}
-        />
-        <mesh rotation={[Math.PI / -2, 0, 0]}>
-          <Bounds fit clip observe margin={1}>
+      <Stage>
+        <mesh>
+          <PerspectiveCamera
+            makeDefault
+            position={[25, 270, 270]}
+            zoom={2}
+            aspect={1.77}
+            near={3}
+            far={3}
+          />
+          <MapControls makeDefault />
+          {/* <ambientLight color={"white"} intensity={1} /> */}
+          <directionalLight
+            // castShadow
+            position={[213.3, 80.0, 264.4]}
+            // shadow-camera-left={-100}
+            // shadow-camera-right={100}
+            // shadow-camera-top={100}
+            // shadow-camera-bottom={-100}
+            // shadow-camera-near={0.5}
+            // shadow-camera-far={500}
+            // shadow-mapSize-width={2048}
+            // shadow-mapSize-height={2048}
+          />
+          <mesh rotation={[Math.PI / -2, 0, 0]}>
+            {/* <Bounds fit clip observe margin={1}> */}
             <HexagonGrid rows={30} cols={30} hexRadius={3} />
-          </Bounds>
-          <MovementArrows />
+            {/* </Bounds> */}
+            <MovementArrows />
+          </mesh>
+          <Environment preset="dawn" />
         </mesh>
-        <Environment preset="dawn" />
-      </mesh>
+      </Stage>
     </Canvas>
   );
 };
