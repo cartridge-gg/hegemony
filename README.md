@@ -55,13 +55,13 @@ sozo build
 sozo migrate
 ```
 
-### Terminal 4
+### Terminal 3
 Start Torii to index changes to the world for the client to consume
 ```sh
 torii --world [contract-address]
 ```
 
-### Terminal 5
+### Terminal 4
 
 ```sh
 cd react-app
