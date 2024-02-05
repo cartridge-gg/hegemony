@@ -16,8 +16,8 @@ mod tests {
 }
 
 mod config {
-    const CENTER_X: u32 = 1000;
-    const CENTER_Y: u32 = 1000;
+    const CENTER_X: u32 = 2147483647;
+    const CENTER_Y: u32 = 2147483647;
     const STARTING_SQUAD_SIZE: u32 = 3;
     const REINFORCEMENT_SQUAD_SIZE: u32 = 3;
 }

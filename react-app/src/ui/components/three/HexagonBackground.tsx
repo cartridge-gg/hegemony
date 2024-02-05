@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { extend } from "@react-three/fiber";
+import { Vector3, extend, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text, Cone } from "@react-three/drei";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@dojoengine/recs";
@@ -11,6 +11,8 @@ import { isEnergySource, offset } from "@/utils";
 import { SquadOnHex } from "./SquadOnHex";
 import { snoise } from "@dojoengine/utils";
 import { useGameState } from "@/hooks/useGameState";
+import { Bloom } from "@react-three/postprocessing";
+import { BlurPass, Resizer, KernelSize, Resolution } from "postprocessing";
 extend({ OrbitControls });
 
 const createHexagonGeometry = (radius: number, depth: number) => {
@@ -70,8 +72,9 @@ export const HexagonBackground = ({
   const [lineThickness, setLineThickness] = useState(1);
   const [lineColor, setLineColor] = useState("gray");
   const [backgroundColor, setBackgroundColor] = useState("white");
-  const [linePosition, setLinePosition] = useState(position);
+
   const [radiusPosition, setRadiusPosition] = useState(radius);
+  const [scalePoint, setScalePoint] = useState(0);
   const [depth, setDepth] = useState(1);
 
   // Squads on hex
@@ -110,11 +113,11 @@ export const HexagonBackground = ({
   useEffect(() => {
     // Determine line properties
     if (isSelected({ col, row, qty: 3 })) {
-      setLineThickness(5);
       setLineColor("red");
+      setScalePoint(0.05);
     } else {
-      setLineThickness(2);
       setLineColor("white");
+      setScalePoint(0);
     }
 
     // Determine background color based on different conditions
@@ -150,6 +153,22 @@ export const HexagonBackground = ({
 
   const hexagonGeometry = useMemo(
     () => createHexagonGeometry(radiusPosition, depth),
+    [radiusPosition, depth]
+  );
+
+  const linePosition = useMemo(() => {
+    return new THREE.Vector3(position[0], position[1], depth);
+  }, [radiusPosition, depth, position]);
+
+  const hexLine = useRef<any>();
+
+  useFrame(() => {
+    const scale = 1 + Math.sin(Date.now() / 100) * scalePoint;
+    hexLine.current.scale.set(scale, scale, scale);
+  });
+
+  const lineGeometry = useMemo(
+    () => createHexagonGeometry(radiusPosition, 0),
     [radiusPosition, depth]
   );
 
@@ -216,16 +235,22 @@ export const HexagonBackground = ({
       >
         <meshStandardMaterial color={backgroundColor} />
       </mesh>
-      {/* <lineSegments
-        geometry={new THREE.EdgesGeometry(hexagonGeometry)}
-        material={
-          new THREE.LineBasicMaterial({
-            color: lineColor,
-            linewidth: lineThickness,
-          })
-        }
-        position={linePosition}
-      /> */}
+      <mesh>
+        <Bloom mipmapBlur luminanceThreshold={1} />
+        <lineSegments
+          ref={hexLine}
+          geometry={new THREE.EdgesGeometry(lineGeometry)}
+          material={
+            new THREE.LineBasicMaterial({
+              color: lineColor,
+
+              linewidth: 5,
+              // transparent: true,
+            })
+          }
+          position={linePosition}
+        />
+      </mesh>
     </>
   );
 };

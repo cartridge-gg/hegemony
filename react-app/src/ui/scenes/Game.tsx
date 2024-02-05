@@ -1,7 +1,7 @@
 import { Canvas, extend } from "@react-three/fiber";
 import {
   OrbitControls,
-  PerspectiveCamera,
+  OrthographicCamera,
   MapControls,
   Bounds,
   Environment,
@@ -44,39 +44,25 @@ export const Game = () => {
   return (
     <Canvas>
       <color attach="background" args={["#ADD8E6"]} />
-      <Stage>
-        <mesh>
-          <PerspectiveCamera
-            makeDefault
-            position={[25, 270, 270]}
-            zoom={2}
-            aspect={1.77}
-            near={3}
-            far={3}
-          />
-          <MapControls makeDefault />
-          {/* <ambientLight color={"white"} intensity={1} /> */}
-          <directionalLight
-            // castShadow
-            position={[213.3, 80.0, 264.4]}
-            // shadow-camera-left={-100}
-            // shadow-camera-right={100}
-            // shadow-camera-top={100}
-            // shadow-camera-bottom={-100}
-            // shadow-camera-near={0.5}
-            // shadow-camera-far={500}
-            // shadow-mapSize-width={2048}
-            // shadow-mapSize-height={2048}
-          />
-          <mesh rotation={[Math.PI / -2, 0, 0]}>
-            {/* <Bounds fit clip observe margin={1}> */}
+      <OrthographicCamera
+        makeDefault
+        position={[0, 200, 100]}
+        zoom={2}
+        near={3}
+        far={3}
+      />
+      <mesh>
+        <MapControls makeDefault />
+        <ambientLight color={"white"} intensity={1} />
+        <directionalLight position={[213.3, 80.0, 264.4]} />
+        <mesh rotation={[Math.PI / -2, 0, 0]}>
+          <Bounds fit clip observe margin={1}>
             <HexagonGrid rows={30} cols={30} hexRadius={3} />
-            {/* </Bounds> */}
-            <MovementArrows />
-          </mesh>
-          <Environment preset="dawn" />
+          </Bounds>
+          <MovementArrows />
         </mesh>
-      </Stage>
+        <Environment preset="dawn" />
+      </mesh>
     </Canvas>
   );
 };
