@@ -34,7 +34,23 @@ export async function setupWorld(provider: DojoProvider) {
       }
     };
 
-    return { resolve_combat };
+    const combat_multi = async ({
+      account,
+      call_data,
+    }: {
+      account: Account;
+      call_data: Call[];
+    }) => {
+      console.log("move_squad_multi", call_data);
+      try {
+        return await provider.executeMulti(account, call_data);
+      } catch (error) {
+        console.error("Error executing spawn:", error);
+        throw error;
+      }
+    };
+
+    return { resolve_combat, combat_multi };
   }
   function game_lobby() {
     const contract_name = "game_lobby";

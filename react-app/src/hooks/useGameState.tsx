@@ -26,7 +26,7 @@ export const useGameState = () => {
   const game = useComponentValue(Game, entityId); // Replace GameType with the actual type of 'Game'
   const [elapsedTime, setElapsedTime] = useState<number>(0);
 
-  useEffect(() => setupTimer(game, setElapsedTime), []);
+  useEffect(() => setupTimer(game, setElapsedTime), [game]);
 
   const { totalDays, totalHours, currentStageIndex, totalCycles } =
     calculateGameProgress(game, elapsedTime);

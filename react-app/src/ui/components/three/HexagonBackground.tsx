@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Vector3, extend, useFrame } from "@react-three/fiber";
+import { extend, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text, Cone } from "@react-three/drei";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@dojoengine/recs";
@@ -8,11 +8,9 @@ import { useStateStore } from "@/hooks/useStateStore";
 import { useDojo } from "@/dojo/useDojo";
 import { Troop } from "./Troop";
 import { isEnergySource, offset } from "@/utils";
-import { SquadOnHex } from "./SquadOnHex";
+import { SquadOnHex, troopStateColours } from "./SquadOnHex";
 import { snoise } from "@dojoengine/utils";
-import { useGameState } from "@/hooks/useGameState";
 import { Bloom } from "@react-three/postprocessing";
-import { BlurPass, Resizer, KernelSize, Resolution } from "postprocessing";
 extend({ OrbitControls });
 
 const createHexagonGeometry = (radius: number, depth: number) => {
@@ -69,7 +67,6 @@ export const HexagonBackground = ({
 
   const meshRef = useRef<any>();
 
-  const [lineThickness, setLineThickness] = useState(1);
   const [lineColor, setLineColor] = useState("gray");
   const [backgroundColor, setBackgroundColor] = useState("white");
 
@@ -186,8 +183,9 @@ export const HexagonBackground = ({
       )}
       {commitmentMove && (
         <Troop
-          position={[position[0], position[1], depth]}
+          position={new THREE.Vector3(position[0], position[1], depth)}
           text={`id: ${commitmentMove.squadId} qty: ${commitmentMove.qty}`}
+          color={troopStateColours.commited}
         />
       )}
       {squadsOnHex?.length > 0 &&

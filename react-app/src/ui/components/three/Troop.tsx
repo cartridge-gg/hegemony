@@ -4,15 +4,21 @@ import { Cylinder } from "@react-three/drei";
 import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 
-export const Troop = ({ text, position, ...props }: any) => {
+interface TroopProps {
+  text: string;
+  position: THREE.Vector3;
+  color: string;
+}
+
+export const Troop = ({ text, position, color }: TroopProps) => {
   const [hover, setHover] = useState(false);
 
   const [scalePoint, setScalePoint] = useState(0);
 
   const meshRef = useRef<any>();
+
   useFrame(() => {
-    // Scale up and down smoothly
-    const scale = 1 + Math.sin(Date.now() / 500) * scalePoint;
+    const scale = 1 + Math.sin(Date.now() / 100) * scalePoint;
     meshRef.current.scale.set(scale, scale, scale);
   });
 
@@ -36,7 +42,7 @@ export const Troop = ({ text, position, ...props }: any) => {
         )}
 
         <Cylinder>
-          <meshStandardMaterial color="orange" />
+          <meshStandardMaterial color={color} />
         </Cylinder>
       </group>
     </mesh>
