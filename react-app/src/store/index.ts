@@ -37,6 +37,8 @@ interface MoveState {
   isSelectedHex: (hex: Hex) => boolean;
   setMove: (move: Move) => void;
   clearMove: () => void;
+  mapCenter: { x: number; y: number };
+  setMapCenter: (center: { x: number; y: number }) => void;
 }
 
 export const useMoveStore = create<MoveState>()(
@@ -128,6 +130,8 @@ export const useMoveStore = create<MoveState>()(
         return selectedHex.col === hex.col && selectedHex.row === hex.row;
       },
       setMove: (move) => set({ move }),
+      mapCenter: { x: 995, y: 995 },
+      setMapCenter: (center) => set({ mapCenter: center }),
       clearMove: () =>
         set({
           move: {

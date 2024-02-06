@@ -30,7 +30,9 @@ export function updatePositionWithDirection(
 
 export const MAP_AMPLITUDE = 16;
 
-export const offset = 995;
+export const offset = 2147483647;
+
+export const GRID_SIZE = 32;
 
 export function isEnergySource({ x, y }: { x: number; y: number }): boolean {
   // Define the distance between energy sources

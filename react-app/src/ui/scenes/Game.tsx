@@ -5,15 +5,18 @@ import {
   MapControls,
   Bounds,
   Environment,
-  Stage,
 } from "@react-three/drei";
 import { HexagonBackground } from "../components/three/HexagonBackground";
 import { MovementArrows } from "../components/three/Arrows";
 import { useGameState } from "@/hooks/useGameState";
+import { useStateStore } from "@/hooks/useStateStore";
+import { GRID_SIZE } from "@/utils";
 extend({ OrbitControls });
 
 const HexagonGrid = ({ rows, cols, hexRadius }: any) => {
   const { totalCycles } = useGameState();
+
+  const { mapCenter } = useStateStore();
 
   const hexagons = [];
   const hexHeight = hexRadius * 2;
@@ -57,7 +60,7 @@ export const Game = () => {
         <directionalLight position={[213.3, 80.0, 264.4]} />
         <mesh rotation={[Math.PI / -2, 0, 0]}>
           <Bounds fit clip observe margin={1}>
-            <HexagonGrid rows={30} cols={30} hexRadius={3} />
+            <HexagonGrid rows={GRID_SIZE} cols={GRID_SIZE} hexRadius={3} />
           </Bounds>
           <MovementArrows />
         </mesh>

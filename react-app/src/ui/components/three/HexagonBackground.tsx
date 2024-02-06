@@ -69,7 +69,6 @@ export const HexagonBackground = ({
 
   const meshRef = useRef<any>();
 
-  const [lineThickness, setLineThickness] = useState(1);
   const [lineColor, setLineColor] = useState("gray");
   const [backgroundColor, setBackgroundColor] = useState("white");
 
@@ -80,12 +79,12 @@ export const HexagonBackground = ({
   // Squads on hex
   const squadsOnHex = useEntityQuery([
     Has(Position),
-    HasValue(Position, { x: col + offset, y: row + offset }),
+    HasValue(Position, { x: col + offset - 16, y: row + offset - 16 }),
   ]);
 
   // Base on hex
   const baseOnHex = useEntityQuery([
-    HasValue(Base, { x: col + offset, y: row + offset }),
+    HasValue(Base, { x: col + offset - 16, y: row + offset - 16 }),
   ]);
 
   const isMoveToHex = useMemo(() => {
@@ -243,7 +242,6 @@ export const HexagonBackground = ({
           material={
             new THREE.LineBasicMaterial({
               color: lineColor,
-
               linewidth: 5,
               // transparent: true,
             })

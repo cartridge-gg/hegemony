@@ -21,6 +21,9 @@ export const useStateStore = () => {
   const move = useMoveStore((state) => state.move);
   const clearMove = useMoveStore((state) => state.clearMove);
 
+  const setMapCenter = useMoveStore((state) => state.setMapCenter);
+  const mapCenter = useMoveStore((state) => state.mapCenter);
+
   return {
     isSelected,
     selectedHex,
@@ -37,5 +40,7 @@ export const useStateStore = () => {
     move,
     clearMove,
     setSelectedHex,
+    setMapCenter,
+    mapCenter,
   };
 };
