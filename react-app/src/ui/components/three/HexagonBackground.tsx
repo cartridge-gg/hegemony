@@ -12,6 +12,8 @@ import { isEnergySource, offset } from "@/utils";
 import { SquadOnHex, troopStateColours } from "./SquadOnHex";
 import { snoise } from "@dojoengine/utils";
 import { Bloom } from "@react-three/postprocessing";
+import { useMoveStore } from "@/store";
+import { HexTile } from "@/utils/hex";
 
 const createHexagonGeometry = (radius: number, depth: number) => {
   const shape = new THREE.Shape();
@@ -52,7 +54,7 @@ export const HexagonBackground = ({
 }: any) => {
   const {
     setup: {
-      clientComponents: { Position, Base },
+      clientComponents: { Position, Base},
     },
   } = useDojo();
 
@@ -74,13 +76,12 @@ export const HexagonBackground = ({
   const [radiusPosition, setRadiusPosition] = useState(radius);
   const [scalePoint, setScalePoint] = useState(0);
   const [depth, setDepth] = useState(1);
-
+  const [isHighlighted, setIsHighlighted] = useState(false)
   // Squads on hex
   const squadsOnHex = useEntityQuery([
     Has(Position),
     HasValue(Position, { x: col + offset, y: row + offset }),
   ]);
-
   // Base on hex
   const baseOnHex = useEntityQuery([
     HasValue(Base, { x: col + offset, y: row + offset }),
@@ -107,6 +108,14 @@ export const HexagonBackground = ({
   const seed = Math.floor(
     ((snoise([col / MAP_AMPLITUDE, 0, row / MAP_AMPLITUDE]) + 1) / 2) * 100
   );
+
+  const selected = useMoveStore((state) => state.selectedHex)
+  const squadOnSelectedHex = useEntityQuery([
+    Has(Position),
+    HasValue(Position, { x: (selected?.col ?? 0) + 986, y: (selected?.row ?? 0 )+ 986 }),
+  ]);
+  
+  const selectedSquad = findSquadByCoordinates(totalCycles, selected?.col ?? -1, selected?.row ?? -1);
 
   useEffect(() => {
     // Determine line properties
@@ -146,6 +155,20 @@ export const HexagonBackground = ({
     }
     setDepth(depth);
     setBackgroundColor(backgroundColor);
+    
+    //Highlight yellow of valid moves (within 3 tiles of selected hex)
+    if (selected && squadOnSelectedHex.length > 0) {
+      const validMoveTiles = new HexTile(selected.col, selected.row).getValidMoveTiles(3)
+      
+      if (validMoveTiles.has(new HexTile(col, row).toString())) {
+        setIsHighlighted(true)
+      } else {
+        setIsHighlighted(false)
+      }
+    }else{
+      setIsHighlighted(false)
+    }
+
   }, [selectedHex, moves, isMoveToHex, seed, isSelected, col, row]);
 
   const isBase = isEnergySource({ x: col + offset, y: row + offset });
@@ -226,7 +249,11 @@ export const HexagonBackground = ({
         position={position}
         geometry={hexagonGeometry}
       >
-        <meshStandardMaterial color={backgroundColor} />
+        <meshStandardMaterial color={backgroundColor} opacity={.1} />
+        {isHighlighted && (<mesh geometry={hexagonGeometry}>
+          <meshBasicMaterial color={"yellow"} transparent={true} opacity={0.5} />
+        </mesh>)}
+        
       </mesh>
 
       {/* HEXAGON LINE */}
