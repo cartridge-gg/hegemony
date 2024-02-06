@@ -13,6 +13,7 @@ import { offset } from "@/utils";
 import { useGameState } from "@/hooks/useGameState";
 import { useQueryParams } from "@/hooks/useQueryParams";
 import { useResolveMoves } from "@/hooks/useResolveMoves";
+import { HexTile } from "@/utils/hex";
 
 export const Commitment = () => {
   const {
@@ -211,6 +212,14 @@ export const MoveInput = () => {
     col: 0,
     row: 0,
   };
+  
+  //Valid Moves are within 3 hexes
+  const validMoveTiles = new HexTile(isSelected.col, isSelected.row ).getValidMoveTiles(3)
+  const isValidMove = validMoveTiles.has(new HexTile(moveToHex?.col ?? -100, moveToHex?.row ?? -100).toString())
+  let invalidMove = false;
+  if(!isValidMove){
+    invalidMove = true; 
+  }
 
   const squadsOnHex = useEntityQuery([
     Has(Position),
@@ -291,7 +300,7 @@ export const MoveInput = () => {
         </div>
         <Button
           disabled={
-            (move.x == 0 && move.y == 0) || squadOnHex?.squad_id == undefined
+            (move.x == 0 && move.y == 0) || squadOnHex?.squad_id == undefined || invalidMove
           }
           onClick={() => setMoveByDay(totalCycles, move)}
         >

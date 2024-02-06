@@ -24,7 +24,7 @@ const HexagonGrid = ({ rows, cols, hexRadius }: any) => {
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const x = col * horizDist + ((row % 2) * horizDist) / 2;
-      const y = row * vertDist;
+      const y = -(row * vertDist);
       hexagons.push(
         <HexagonBackground
           key={`${row}-${col}`}
