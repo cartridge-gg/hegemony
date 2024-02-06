@@ -154,6 +154,7 @@ export async function setupWorld(provider: DojoProvider) {
       account: Account;
       call_data: Call[];
     }) => {
+      console.log("move_squad_multi", call_data);
       try {
         return await provider.executeMulti(account, call_data);
       } catch (error) {

@@ -36,7 +36,7 @@ export const useCommitTransaction = () => {
     const movesMap = updatedMoves.map((move) => {
       return {
         entrypoint: "move_squad_reveal",
-        contractAddress: getContractByName(manifest, "move"),
+        contractAddress: getContractByName(manifest, "move").address,
         calldata: [
           gameId,
           move.newSquadId ? move.newSquadId : move.squadId,
@@ -66,7 +66,7 @@ export const useCommitTransaction = () => {
 
     const movesMap = updatedMoves.map((move) => ({
       entrypoint: "move_squad_commitment",
-      contractAddress: getContractByName(manifest, "move"),
+      contractAddress: getContractByName(manifest, "move").address,
       calldata: [
         gameId,
         move.squadId,
