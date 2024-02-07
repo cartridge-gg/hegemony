@@ -37,6 +37,7 @@ interface MoveState {
   isSelectedHex: (hex: Hex) => boolean;
   setMove: (move: Move) => void;
   clearMove: () => void;
+  checkMovesRevealed: (day: number) => boolean;
 }
 
 export const useMoveStore = create<MoveState>()(
@@ -142,6 +143,21 @@ export const useMoveStore = create<MoveState>()(
             uuid: "",
           },
         }),
+      checkMovesRevealed: (day) => {
+        const { loadMovesByDay } = get();
+        const dayMoves = loadMovesByDay(day);
+
+        if (!dayMoves) {
+          return false;
+        }
+
+        for (const move of dayMoves) {
+          if (!move.revealed) {
+            return false;
+          }
+        }
+        return true;
+      },
     }),
     {
       name: "move-storage", // name of the item in the storage (must be unique)

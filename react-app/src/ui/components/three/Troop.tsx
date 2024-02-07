@@ -25,7 +25,7 @@ export const Troop = ({ text, position, color }: TroopProps) => {
   return (
     <mesh
       onPointerEnter={() => {
-        setScalePoint(0.05);
+        setScalePoint(0.01);
         setHover(true);
       }}
       onPointerLeave={() => {
@@ -41,7 +41,7 @@ export const Troop = ({ text, position, color }: TroopProps) => {
           <Billboard text={text} position={new THREE.Vector3(0, -0.4, 2)} />
         )}
 
-        <Cylinder>
+        <Cylinder scale={1}>
           <meshStandardMaterial color={color} />
         </Cylinder>
       </group>

@@ -18,19 +18,26 @@ export const Commitment = () => {
   const {
     setup: {
       systemCalls: { spawn_new_units },
-      client,
     },
     account: { account },
   } = useDojo();
 
-  const { toResolvePositions } = useResolveMoves();
+  const { toResolvePositions, resolveMoves } = useResolveMoves();
 
-  const { isCommitStage, isRevealStage, isSpawnCycle } = useGameState();
+  const {
+    isCommitStage,
+    isRevealStage,
+    isSpawnCycle,
+    totalCycles,
+    isResolveStage,
+  } = useGameState();
   const { gameId } = useQueryParams();
-  const { movesCommitArray, moveRevealArray } = useCommitTransaction();
+  const { executeCommitTransaction } = useCommitTransaction();
+
+  const { checkMovesRevealed } = useStateStore();
 
   return (
-    <div className="fixed bottom-0 right-0 p-6 w-96 h-96 bg-white z-10 border border-black overflow-auto">
+    <div className="fixed bottom-0 right-0 p-6 w-96 h-full bg-white z-10 border overflow-auto">
       {isCommitStage && (
         <>
           <MoveInput />
@@ -38,18 +45,22 @@ export const Commitment = () => {
         </>
       )}
 
-      {(isCommitStage || isRevealStage) && (
-        <Button
-          onClick={() =>
-            client.move.move_squad_multi({
-              account,
-              call_data: isCommitStage ? movesCommitArray() : moveRevealArray(),
-            })
-          }
-          className="w-full"
-        >
+      {(isCommitStage ||
+        (isRevealStage && !checkMovesRevealed(totalCycles))) && (
+        <Button onClick={() => executeCommitTransaction()} className="w-full">
           {isCommitStage ? "Commit all" : "Reveal all"} moves
         </Button>
+      )}
+
+      {isResolveStage && (
+        <>
+          {toResolvePositions.map((position, index) => {
+            return <div></div>;
+          })}
+          <Button className="w-full" onClick={() => resolveMoves()}>
+            Resolve Moves
+          </Button>
+        </>
       )}
       {isSpawnCycle && (
         <Button

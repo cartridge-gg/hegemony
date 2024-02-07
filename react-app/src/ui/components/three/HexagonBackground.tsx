@@ -120,10 +120,7 @@ export const HexagonBackground = ({
     // Determine background color based on different conditions
     let backgroundColor = "white";
     let depth = 1;
-    if (isMoveToHex) {
-      backgroundColor = "red";
-      // depth = 1;
-    } else if (seed > 60) {
+    if (seed > 60) {
       backgroundColor = "blue";
       depth = 0.4;
     } else if (seed > 40) {
@@ -141,6 +138,10 @@ export const HexagonBackground = ({
     } else {
       backgroundColor = "black";
       depth = 3;
+    }
+
+    if (isMoveToHex) {
+      backgroundColor = "red";
     }
     setDepth(depth);
     setBackgroundColor(backgroundColor);

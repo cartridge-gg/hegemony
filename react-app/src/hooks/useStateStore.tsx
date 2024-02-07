@@ -21,6 +21,8 @@ export const useStateStore = () => {
   const move = useMoveStore((state) => state.move);
   const clearMove = useMoveStore((state) => state.clearMove);
 
+  const checkMovesRevealed = useMoveStore((state) => state.checkMovesRevealed);
+
   return {
     isSelected,
     selectedHex,
@@ -37,5 +39,6 @@ export const useStateStore = () => {
     move,
     clearMove,
     setSelectedHex,
+    checkMovesRevealed,
   };
 };

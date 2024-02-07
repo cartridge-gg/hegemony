@@ -23,7 +23,7 @@ export const useGameState = () => {
   const { gameId } = useQueryParams();
 
   const entityId = calculateEntityId(gameId);
-  const game = useComponentValue(Game, entityId); // Replace GameType with the actual type of 'Game'
+  const game = useComponentValue(Game, entityId);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
 
   useEffect(() => setupTimer(game, setElapsedTime), [game]);
@@ -35,6 +35,8 @@ export const useGameState = () => {
     game,
     elapsedTime
   );
+
+  const isSpawnCycle = totalCycles == 0 ? false : totalCycles % 2 === 0;
 
   return {
     account,
@@ -52,7 +54,7 @@ export const useGameState = () => {
     isCommitStage: currentStageIndex === 0,
     isRevealStage: currentStageIndex === 1,
     isResolveStage: currentStageIndex === 2,
-    isSpawnCycle: totalCycles % 2 === 0,
+    isSpawnCycle,
   };
 };
 

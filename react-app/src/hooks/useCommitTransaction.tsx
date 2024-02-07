@@ -4,24 +4,29 @@ import { dojoConfig } from "../../dojoConfig";
 import { Call, num } from "starknet";
 import { useQueryParams } from "./useQueryParams";
 import { useGameState } from "./useGameState";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { offset } from "@/utils";
+import { useDojo } from "@/dojo/useDojo";
 
 export const useCommitTransaction = () => {
+  const {
+    setup: { client },
+    account: { account },
+  } = useDojo();
+
   const { manifest } = dojoConfig();
   const { gameId } = useQueryParams();
 
-  const { totalCycles, currentStage, isCommitStage, isResolveStage } =
-    useGameState();
+  const { totalCycles, isCommitStage } = useGameState();
 
   const loadMovesByDay = useMoveStore((state) => state.loadMovesByDay);
   const setMoveByDay = useMoveStore((state) => state.setMoveByDay);
 
   const moves = useMemo(() => {
     return loadMovesByDay(totalCycles);
-  }, [totalCycles]);
+  }, [totalCycles, loadMovesByDay]);
 
-  const moveRevealArray = (): Call[] => {
+  const moveRevealArray = useCallback(() => {
     const updatedMoves = moves.map((move) => ({
       ...move,
       revealed: true,
@@ -50,9 +55,9 @@ export const useCommitTransaction = () => {
     console.log(movesMap);
 
     return movesMap;
-  };
+  }, [moves, gameId, manifest, setMoveByDay, totalCycles]);
 
-  const movesCommitArray = (): Call[] => {
+  const movesCommitArray = useCallback(() => {
     const updatedMoves = moves.map((move) => ({
       ...move,
       committed: true,
@@ -78,9 +83,17 @@ export const useCommitTransaction = () => {
     console.log(movesMap);
 
     return movesMap;
-  };
+  }, [moves, gameId, manifest, setMoveByDay, totalCycles]);
+
+  const executeCommitTransaction = useCallback(() => {
+    return client.move.move_squad_multi({
+      account,
+      call_data: isCommitStage ? movesCommitArray() : moveRevealArray(),
+    });
+  }, [isCommitStage, movesCommitArray, moveRevealArray, account, client.move]);
 
   return {
+    executeCommitTransaction,
     movesCommitArray,
     moveRevealArray,
   };
