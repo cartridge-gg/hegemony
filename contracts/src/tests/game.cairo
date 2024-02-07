@@ -280,8 +280,8 @@ mod tests {
         );
 
         // new positions
-        let x: u32 = 12;
-        let y: u32 = 12;
+        let x: u32 = CENTER_X + 1;
+        let y: u32 = CENTER_Y + 1;
 
         let new_squad_id = SQUAD_ID + 6;
 
@@ -475,8 +475,8 @@ mod tests {
         );
 
         // new positions
-        let x: u32 = 12;
-        let y: u32 = 12;
+        let x: u32 = CENTER_X + 1;
+        let y: u32 = CENTER_Y + 1;
 
         systems
             .move_system
