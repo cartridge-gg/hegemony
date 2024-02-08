@@ -18,7 +18,6 @@ export interface Move {
 interface Hex {
   col: number;
   row: number;
-  qty: number;
 }
 
 interface MoveState {

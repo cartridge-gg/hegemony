@@ -1,17 +1,17 @@
 import * as THREE from "three";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { extend, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Cone } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { Text } from "@react-three/drei";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@dojoengine/recs";
 import { useStateStore } from "@/hooks/useStateStore";
 import { useDojo } from "@/dojo/useDojo";
 import { Troop } from "./Troop";
+import { HomeBase } from "./Base";
 import { isEnergySource, offset } from "@/utils";
 import { SquadOnHex, troopStateColours } from "./SquadOnHex";
 import { snoise } from "@dojoengine/utils";
 import { Bloom } from "@react-three/postprocessing";
-extend({ OrbitControls });
 
 const createHexagonGeometry = (radius: number, depth: number) => {
   const shape = new THREE.Shape();
@@ -48,6 +48,7 @@ export const HexagonBackground = ({
   col,
   row,
   totalCycles,
+  showMoveToHex,
 }: any) => {
   const {
     setup: {
@@ -94,11 +95,11 @@ export const HexagonBackground = ({
   const commitmentMove = findSquadByCoordinates(totalCycles, col, row);
 
   const handleLeftClick = () => {
-    setSelectedHex({ col, row, qty: 3 });
+    setSelectedHex({ col, row });
   };
 
   const handleRightClick = () => {
-    setMoveToHex({ col, row, qty: 3 });
+    setMoveToHex({ col, row });
   };
 
   const MAP_AMPLITUDE = 10;
@@ -109,7 +110,7 @@ export const HexagonBackground = ({
 
   useEffect(() => {
     // Determine line properties
-    if (isSelected({ col, row, qty: 3 })) {
+    if (isSelected({ col, row })) {
       setLineColor("red");
       setScalePoint(0.05);
     } else {
@@ -172,23 +173,24 @@ export const HexagonBackground = ({
 
   return (
     <>
+      {/* IS ENERGY SOURCE */}
       {isBase && (
-        <mesh
-          rotation={[Math.PI / 2, 0, 0]}
-          position={[position[0], position[1], 1]}
-        >
-          <Cone>
-            <meshStandardMaterial color="black" />
-          </Cone>
-        </mesh>
+        <HomeBase
+          position={new THREE.Vector3(position[0], position[1], 1)}
+          color="purple"
+        />
       )}
-      {commitmentMove && (
+
+      {/* COMMITMENT MOVE */}
+      {showMoveToHex && commitmentMove && (
         <Troop
           position={new THREE.Vector3(position[0], position[1], depth)}
           text={`id: ${commitmentMove.squadId} qty: ${commitmentMove.qty}`}
           color={troopStateColours.commited}
         />
       )}
+
+      {/* SQUADS ON HEX */}
       {squadsOnHex?.length > 0 &&
         squadsOnHex.map((a, index) => (
           <SquadOnHex
@@ -200,23 +202,15 @@ export const HexagonBackground = ({
           />
         ))}
 
+      {/* BASE ON HEX */}
       {baseOnHex?.length > 0 && (
-        <mesh
-          rotation={[Math.PI / 2, 0, 0]}
-          position={[position[0], position[1], 1]}
-        >
-          <Cone>
-            <meshStandardMaterial color="red" />
-          </Cone>
-        </mesh>
+        <HomeBase
+          position={new THREE.Vector3(position[0], position[1], 1)}
+          color="red"
+        />
       )}
 
-      <mesh position={[position[0] - 2, position[1] - 1, depth + 0.2]}>
-        <Text fontSize={0.4} color="white" anchorX="center" anchorY="middle">
-          {col},{row}
-        </Text>
-      </mesh>
-
+      {/* HEXAGON */}
       <mesh
         onPointerEnter={() => {
           setLineColor("red");
@@ -224,7 +218,7 @@ export const HexagonBackground = ({
         onClick={() => handleLeftClick()}
         onContextMenu={(e) => handleRightClick()}
         onPointerLeave={() => {
-          if (!isSelected({ col, row, qty: 3 })) {
+          if (!isSelected({ col, row })) {
             setLineColor("white");
           }
         }}
@@ -234,6 +228,8 @@ export const HexagonBackground = ({
       >
         <meshStandardMaterial color={backgroundColor} />
       </mesh>
+
+      {/* HEXAGON LINE */}
       <mesh>
         <Bloom mipmapBlur luminanceThreshold={1} />
         <lineSegments
@@ -249,6 +245,13 @@ export const HexagonBackground = ({
           }
           position={linePosition}
         />
+      </mesh>
+
+      {/* COL, ROW */}
+      <mesh position={[position[0] - 2, position[1] - 1, depth + 0.2]}>
+        <Text fontSize={0.4} color="white" anchorX="center" anchorY="middle">
+          {col},{row}
+        </Text>
       </mesh>
     </>
   );

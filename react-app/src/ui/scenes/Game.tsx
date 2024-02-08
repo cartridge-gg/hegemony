@@ -13,7 +13,8 @@ import { useGameState } from "@/hooks/useGameState";
 extend({ OrbitControls });
 
 const HexagonGrid = ({ rows, cols, hexRadius }: any) => {
-  const { totalCycles } = useGameState();
+  const { totalCycles, isCommitStage, isResolveStage, isRevealStage } =
+    useGameState();
 
   const hexagons = [];
   const hexHeight = hexRadius * 2;
@@ -33,6 +34,7 @@ const HexagonGrid = ({ rows, cols, hexRadius }: any) => {
           col={col}
           row={row}
           totalCycles={totalCycles}
+          showMoveToHex={isCommitStage}
         />
       );
     }

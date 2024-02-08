@@ -236,7 +236,6 @@ export const MoveInput = () => {
         ...move,
         x: moveToHex.col,
         y: moveToHex.row,
-        qty: moveToHex.qty,
       });
     }
   }, [moveToHex, moves]);
