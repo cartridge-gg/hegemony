@@ -10,7 +10,8 @@ trait IMove<TContractState> {
 
 #[dojo::contract]
 mod move {
-    use super::IMove;
+    use core::array::ArrayTrait;
+use super::IMove;
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
     use hegemony::models::{
@@ -104,7 +105,23 @@ mod move {
             // check hash
             check_hash(world, game_id, player, squad_id, unit_qty, x, y);
 
-            // TODO: check distance is max 3 hexes
+            let squad_position_as_hex = HexTile { row : squad_current_position.x, col :  squad_current_position.y};            
+            let mut valid_moves = squad_position_as_hex.tiles_within_range(3);
+            let mut is_valid_move = false;
+            let mut i = 0;
+            loop {
+                if !(is_valid_move == false && i < valid_moves.len()) {
+                    break;
+                }
+                let current_tile = *valid_moves.at(i);
+                if (current_tile.col == x && current_tile.row == y) {
+                    is_valid_move = true;
+                }
+                i += 1;
+            };
+
+            assert_eq!(is_valid_move, true);
+            
 
             let players_squads_on_position = get_player_squads_on_position(
                 get_squads_on_position(world, game_id, x, y).span(), player

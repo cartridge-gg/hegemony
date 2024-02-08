@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { useDojo } from "@/dojo/useDojo";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { Has } from "@dojoengine/recs";
+import { Entity, Has } from "@dojoengine/recs";
 import { useNavigate } from "react-router-dom";
 
 export const GameTable = () => {
@@ -40,7 +40,11 @@ export const GameTable = () => {
   );
 };
 
-export const GameTableRow = ({ entity }: any) => {
+interface GameTableRowProps {
+  entity: Entity;
+}
+
+export const GameTableRow = ({ entity }: GameTableRowProps) => {
   const {
     setup: {
       clientComponents: { Game },
@@ -62,7 +66,7 @@ export const GameTableRow = ({ entity }: any) => {
   return (
     <TableRow>
       <TableCell className="font-medium">
-        <Button onClick={() => setGameQueryParam("1")}>GO</Button>
+        <Button onClick={() => setGameQueryParam(game?.game_id.toString() ?? "1")}>GO</Button>
         {game?.game_id}
       </TableCell>
       <TableCell>{game?.players}</TableCell>
@@ -82,7 +86,7 @@ export const GameTableRow = ({ entity }: any) => {
           onClick={() =>
             start_game({
               account: account.account,
-              game_id: 1,
+              game_id: game?.game_id ?? 1,
             })
           }
         >
@@ -90,7 +94,7 @@ export const GameTableRow = ({ entity }: any) => {
         </Button>
 
         <Button
-          onClick={() => spawn_player({ account: account.account, game_id: 1 })}
+          onClick={() => spawn_player({ account: account.account, game_id: game?.game_id ?? 1 })}
         >
           spawn
         </Button>

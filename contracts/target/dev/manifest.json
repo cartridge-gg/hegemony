@@ -1273,7 +1273,7 @@
     {
       "name": "hegemony::systems::move::move",
       "address": "0x706ce5c30c117ecef590ce88855bc5893a8a79d4ac8f397cef2d96ee7bd66d9",
-      "class_hash": "0x4f08e38b4406689a9b14f7a0b6b73153e8cdd69560a79199051daabdc04166a",
+      "class_hash": "0x6236fb6eea91e7e0da645f4c429c903766ab5a5d6977ba1bb8665ba93817f0a",
       "abi": [
         {
           "type": "impl",
